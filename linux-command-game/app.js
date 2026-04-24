@@ -1,0 +1,1421 @@
+"use strict";
+
+const canvas = document.getElementById("terminalCanvas");
+const ctx = canvas.getContext("2d");
+const commandInput = document.getElementById("commandInput");
+const promptLabel = document.getElementById("promptLabel");
+const learningPanel = document.getElementById("learningPanel");
+const panelTitle = document.getElementById("panelTitle");
+const panelDescription = document.getElementById("panelDescription");
+const goalList = document.getElementById("goalList");
+const hintButton = document.getElementById("hintButton");
+const nextButton = document.getElementById("nextButton");
+const hintText = document.getElementById("hintText");
+const screenStatus = document.getElementById("screenStatus");
+const scoreStatus = document.getElementById("scoreStatus");
+const riskStatus = document.getElementById("riskStatus");
+
+const FONT_FAMILY = '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
+const LINE_HEIGHT = 22;
+const PADDING_X = 22;
+const PADDING_Y = 22;
+
+const titleArt = [
+  " _     _                         ____                                          _ ",
+  "| |   (_)_ __  _   ___  __      / ___|___  _ __ ___  _ __ ___   __ _ _ __   __| |",
+  "| |   | | '_ \\| | | \\ \\/ /_____| |   / _ \\| '_ ` _ \\| '_ ` _ \\ / _` | '_ \\ / _` |",
+  "| |___| | | | | |_| |>  <_____| |__| (_) | | | | | | | | | | | (_| | | | | (_| |",
+  "|_____|_|_| |_|\\__,_/_/\\_\\     \\____\\___/|_| |_| |_|_| |_| |_|\\__,_|_| |_|\\__,_|",
+  "                         Quest"
+];
+
+const manualArt = [
+  " _   _                 _____         ____  _             ",
+  "| | | | _____      __ |_   _|__     |  _ \\| | __ _ _   _ ",
+  "| |_| |/ _ \\ \\ /\\ / /   | |/ _ \\    | |_) | |/ _` | | | |",
+  "|  _  | (_) \\ V  V /    | | (_) |   |  __/| | (_| | |_| |",
+  "|_| |_|\\___/ \\_/\\_/     |_|\\___/    |_|   |_|\\__,_|\\__, |",
+  "                                                   |___/ "
+];
+
+const typingModeNote = "※これはコマンドを覚えるゲームなのでオプションやパラメータは、省略しています";
+
+const manualText = [
+  ...manualArt,
+  "",
+  "1. このゲームは、Linuxコマンドを安全に練習するための仮想ターミナルです。",
+  "2. コマンドを入力してEnterを押すと、仮想Linux環境で結果が表示されます。",
+  "3. まずは pwd で現在地を確認します。",
+  "4. ls でファイルやディレクトリの一覧を確認できます。",
+  "5. cd /home/trainee/projects のように入力すると、ディレクトリを移動できます。",
+  "6. cat readme.txt でファイルの中身を読みます。",
+  "7. cp app.conf app.conf.bak で設定ファイルのバックアップを作れます。",
+  "8. chmod 755 deploy.sh でスクリプトに実行権限を付けます。",
+  "9. chmod 777 や rm -rf / のような危険操作は、ゲーム内インシデントとして扱われます。",
+  "10. typing で、意味とコマンドを見ながらタイピング練習ができます。",
+  "11. challenge で、意味だけを見て20問のタイムアタックに挑戦できます。",
+  `12. ${typingModeNote}`,
+  "13. 困ったらゲーム画面のヒントを見るか、help を入力してください。",
+  "",
+  "この画面は vi 風の閲覧専用マニュアルです。編集はできません。",
+  "終了するには :q! または :wq を入力してください。"
+];
+
+const bootScript = [
+  { type: "input", text: "ssh trainee@linux-command-quest.local" },
+  { type: "system", text: "Connecting to linux-command-quest.local..." },
+  { type: "success", text: "Welcome to Linux Command Quest training shell." },
+  { type: "input", text: "./start-training.sh" },
+  { type: "system", text: "Loading virtual filesystem..." },
+  { type: "system", text: "Loading mission database..." },
+  { type: "success", text: "Starting terminal trainer..." }
+];
+
+const typingQuestions = [
+  { id: "type-001", meaning: "現在のディレクトリを表示する", command: "pwd", category: "navigation", difficulty: "basic" },
+  { id: "type-002", meaning: "ファイル一覧を表示する", command: "ls", category: "navigation", difficulty: "basic" },
+  { id: "type-003", meaning: "ディレクトリを移動する", command: "cd", category: "navigation", difficulty: "basic" },
+  { id: "type-004", meaning: "ファイルの内容を表示する", command: "cat", category: "file-read", difficulty: "basic" },
+  { id: "type-005", meaning: "ファイルをコピーする", command: "cp", category: "file-operation", difficulty: "basic" },
+  { id: "type-006", meaning: "ファイルやディレクトリを移動、または名前変更する", command: "mv", category: "file-operation", difficulty: "basic" },
+  { id: "type-007", meaning: "ファイルやディレクトリを削除する", command: "rm", category: "file-operation", difficulty: "basic" },
+  { id: "type-008", meaning: "ディレクトリを作成する", command: "mkdir", category: "file-operation", difficulty: "basic" },
+  { id: "type-009", meaning: "空のファイルを作成する", command: "touch", category: "file-operation", difficulty: "basic" },
+  { id: "type-010", meaning: "画面を消去する", command: "clear", category: "navigation", difficulty: "basic" },
+  { id: "type-011", meaning: "ファイル内の文字列を検索する", command: "grep", category: "file-read", difficulty: "intermediate" },
+  { id: "type-012", meaning: "ファイルやディレクトリを探す", command: "find", category: "file-read", difficulty: "intermediate" },
+  { id: "type-013", meaning: "ファイルの末尾を表示する", command: "tail", category: "file-read", difficulty: "intermediate" },
+  { id: "type-014", meaning: "ファイルの先頭を表示する", command: "head", category: "file-read", difficulty: "intermediate" },
+  { id: "type-015", meaning: "行数や文字数を数える", command: "wc", category: "file-read", difficulty: "intermediate" },
+  { id: "type-016", meaning: "ファイル権限を変更する", command: "chmod", category: "permission", difficulty: "intermediate" },
+  { id: "type-017", meaning: "ファイルの所有者を変更する", command: "chown", category: "permission", difficulty: "intermediate" },
+  { id: "type-018", meaning: "プロセス一覧を表示する", command: "ps", category: "process", difficulty: "intermediate" },
+  { id: "type-019", meaning: "ディスク使用量を表示する", command: "df", category: "system", difficulty: "intermediate" },
+  { id: "type-020", meaning: "ディレクトリやファイルの容量を表示する", command: "du", category: "system", difficulty: "intermediate" },
+  { id: "type-021", meaning: "ファイルをエディタで開く", command: "vi", category: "manual", difficulty: "basic" }
+];
+
+const missions = [
+  {
+    id: "mission-001",
+    title: "Mission 1: 現在地を確認する",
+    description: "まずはターミナルの現在地を確認してください。Linuxでは、自分がどこにいるかを確認してから作業を始めます。",
+    goals: [{ type: "commandExecuted", command: "pwd", label: "`pwd` を実行する" }],
+    hints: ["現在地の確認には pwd を使います。", "コマンドは引数なしで実行できます。", "入力例: pwd"],
+    completionMessage: "現在地を確認できました。次はディレクトリを移動して中身を確認しましょう。"
+  },
+  {
+    id: "mission-002",
+    title: "Mission 2: 指定ディレクトリへ移動する",
+    description: "`/home/trainee/projects` に移動し、中にあるファイル一覧を確認してください。",
+    goals: [
+      { type: "currentPath", path: "/home/trainee/projects", label: "`/home/trainee/projects` に移動する" },
+      { type: "commandExecutedInPath", command: "ls", path: "/home/trainee/projects", label: "移動先で `ls` を実行する" }
+    ],
+    hints: ["ディレクトリ移動には cd を使います。", "移動後に ls を実行して一覧を見ます。", "入力例: cd /home/trainee/projects その後 ls"],
+    completionMessage: "移動と一覧確認ができました。設定作業の前には、対象ファイルの存在確認が大切です。"
+  },
+  {
+    id: "mission-003",
+    title: "Mission 3: 設定ファイルをバックアップする",
+    description: "`app.conf` を `app.conf.bak` としてコピーしてください。設定変更の前には必ずバックアップを作ります。",
+    goals: [
+      { type: "fileExists", path: "/home/trainee/projects/app.conf", label: "元の `app.conf` が残っている" },
+      { type: "fileExists", path: "/home/trainee/projects/app.conf.bak", label: "`app.conf.bak` が存在する" }
+    ],
+    hints: ["ファイルコピーには cp を使います。", "コピー元、コピー先の順に指定します。", "入力例: cp app.conf app.conf.bak"],
+    completionMessage: "バックアップを作成できました。次は実行権限の変更を試します。"
+  },
+  {
+    id: "mission-004",
+    title: "Mission 4: 実行権限を付与する",
+    description: "`deploy.sh` に必要最小限の実行権限を付与してください。今回の正解は `755` です。",
+    goals: [{ type: "fileMode", path: "/home/trainee/projects/deploy.sh", mode: "755", label: "`deploy.sh` の権限を `755` にする" }],
+    hints: ["権限変更には chmod を使います。", "数値モードとファイル名を指定します。", "入力例: chmod 755 deploy.sh"],
+    completionMessage: "実行権限を安全に変更できました。`777` を避けたのが良い判断です。"
+  }
+];
+
+const state = {
+  screen: "boot",
+  lines: [],
+  history: [],
+  historyIndex: null,
+  currentPath: "/home/trainee",
+  fileSystem: createFileSystem(),
+  executedCommands: [],
+  score: 1000,
+  risk: 0,
+  currentMissionIndex: 0,
+  completedMissionIds: [],
+  hintIndex: 0,
+  completedCurrentMission: false,
+  bootTimer: null,
+  challengeTimer: null,
+  manualReturnScreen: "top",
+  progressReturnScreen: "top",
+  gameStarted: false,
+  typing: createTypingState()
+};
+
+function createTypingState() {
+  return {
+    mode: null,
+    questions: [],
+    currentIndex: 0,
+    correctCount: 0,
+    mistakeCount: 0,
+    startedAt: null,
+    endedAt: null,
+    penaltySeconds: 0,
+    hintRevealCount: 0,
+    lastFeedback: "",
+    result: null
+  };
+}
+
+function createFileSystem() {
+  return dir("/", {
+    home: dir("home", {
+      trainee: dir("trainee", {
+        projects: dir("projects", {
+          "readme.txt": file("readme.txt", "Linux Command Quest project workspace.\nまずは app.conf を確認し、deploy.sh の権限を整えましょう。\n", "644"),
+          "app.conf": file("app.conf", "APP_NAME=command-quest\nPORT=8080\nENV=training\nLOG_LEVEL=info\n", "640"),
+          "deploy.sh": file("deploy.sh", "#!/bin/sh\necho Deploying Linux Command Quest\n", "644")
+        }),
+        logs: dir("logs", {
+          "access.log": file("access.log", "10.0.0.8 - GET / 200\n10.0.0.9 - GET /manual 200\n", "644"),
+          "error.log": file("error.log", "2026-04-24 09:12:22 WARN deploy.sh is not executable\n", "644")
+        }),
+        "manual.txt": file("manual.txt", manualText.join("\n"), "444")
+      })
+    }),
+    etc: dir("etc", {
+      myapp: dir("myapp", {
+        "app.conf": file("app.conf", "PORT=8080\nWORKERS=2\n", "640")
+      })
+    }),
+    var: dir("var", {
+      log: dir("log", {
+        syslog: file("syslog", "system booted\ntraining sandbox ready\n", "644"),
+        nginx: dir("nginx", {
+          "access.log": file("access.log", "GET / 200\nGET /health 200\n", "644"),
+          "error.log": file("error.log", "no critical errors\n", "644")
+        })
+      })
+    })
+  });
+}
+
+function dir(name, children) {
+  return { name, type: "directory", mode: "755", owner: "root", group: "root", children };
+}
+
+function file(name, content, mode) {
+  return { name, type: "file", content, mode, owner: "trainee", group: "trainee" };
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const scale = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(rect.width * scale));
+  canvas.height = Math.max(1, Math.floor(rect.height * scale));
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  render();
+}
+
+function appendLine(kind, text) {
+  const parts = String(text).split("\n");
+  parts.forEach((part) => state.lines.push({ kind, text: part, timestamp: Date.now() }));
+  const maxLines = 450;
+  if (state.lines.length > maxLines) {
+    state.lines.splice(0, state.lines.length - maxLines);
+  }
+}
+
+function appendPromptedInput(text) {
+  const prompt = getPromptText();
+  appendLine("input", prompt ? `${prompt} ${text}` : text);
+}
+
+function getPromptText() {
+  if (state.screen === "game") {
+    return `trainee@quest:${state.currentPath}$`;
+  }
+  if (state.screen === "typing") {
+    return "practice>";
+  }
+  if (state.screen === "challenge") {
+    return "challenge>";
+  }
+  if (state.screen === "challenge-result") {
+    return "$";
+  }
+  if (state.screen === "manual") {
+    return "";
+  }
+  if (state.screen === "progress") {
+    return "$";
+  }
+  return "$";
+}
+
+function setPrompt() {
+  promptLabel.textContent = getPromptText();
+}
+
+function colorForKind(kind) {
+  if (kind === "input") return "#8ff0a4";
+  if (kind === "error") return "#ff6b6b";
+  if (kind === "warning") return "#ffd166";
+  if (kind === "success") return "#7ee787";
+  if (kind === "system") return "#66d9ef";
+  if (kind === "muted") return "#77847c";
+  return "#d7ded7";
+}
+
+function render() {
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#050607";
+  ctx.fillRect(0, 0, width, height);
+  ctx.font = `15px ${FONT_FAMILY}`;
+  ctx.textBaseline = "top";
+
+  const wrapWidth = Math.max(24, Math.floor((width - PADDING_X * 2) / 8.7));
+  const visualLines = [];
+  state.lines.forEach((line) => {
+    wrapText(line.text, wrapWidth).forEach((text) => {
+      visualLines.push({ kind: line.kind, text });
+    });
+  });
+
+  const visibleCount = Math.max(1, Math.floor((height - PADDING_Y * 2) / LINE_HEIGHT));
+  const start = Math.max(0, visualLines.length - visibleCount);
+  let y = PADDING_Y;
+  for (let i = start; i < visualLines.length; i += 1) {
+    const line = visualLines[i];
+    ctx.fillStyle = colorForKind(line.kind);
+    ctx.fillText(line.text, PADDING_X, y);
+    y += LINE_HEIGHT;
+  }
+
+  drawCursorGlow(width, height);
+  renderPanel();
+  setPrompt();
+}
+
+function wrapText(text, maxChars) {
+  if (text.length <= maxChars) return [text];
+  const lines = [];
+  let rest = text;
+  while (rest.length > maxChars) {
+    lines.push(rest.slice(0, maxChars));
+    rest = rest.slice(maxChars);
+  }
+  lines.push(rest);
+  return lines;
+}
+
+function drawCursorGlow(width, height) {
+  ctx.strokeStyle = "rgba(143, 240, 164, 0.18)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(8, 8, width - 16, height - 16);
+}
+
+function renderPanel() {
+  screenStatus.textContent = state.screen.toUpperCase();
+  scoreStatus.textContent = String(state.score);
+  riskStatus.textContent = state.risk >= 70 ? "INCIDENT" : state.risk >= 35 ? "WARN" : "LOW";
+  riskStatus.style.color = state.risk >= 70 ? "#ff7a90" : state.risk >= 35 ? "#ffcf70" : "#d7ded7";
+
+  clearNode(goalList);
+  if (state.screen === "boot") {
+    learningPanel.hidden = false;
+    panelTitle.textContent = "仮想Linuxを起動中";
+    panelDescription.textContent = "CLIの起動ログを表示しています。Enterでスキップできます。";
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = "";
+    return;
+  }
+
+  if (state.screen === "top") {
+    learningPanel.hidden = false;
+    panelTitle.textContent = "トップメニュー";
+    panelDescription.textContent = "`start` でミッション、`typing` で練習、`challenge` で20問タイムアタックを開始できます。";
+    addGoal("start または 1: ゲームを始める", false);
+    addGoal("manual または 2: 遊び方を読む", false);
+    addGoal("credits または 3: クレジットを見る", false);
+    addGoal("progress または 4: 進捗を見る", false);
+    if (state.gameStarted) {
+      addGoal("resume または 5: 中断したゲームへ戻る", false);
+    }
+    addGoal("typing または 6: コマンド練習", false);
+    addGoal("challenge または 7: 本番タイムアタック", false);
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = "";
+    return;
+  }
+
+  if (state.screen === "manual") {
+    learningPanel.hidden = false;
+    panelTitle.textContent = "vi manual.txt";
+    panelDescription.textContent = "閲覧専用のvi風マニュアルです。`:q!` または `:wq` で戻れます。";
+    addGoal(":q! または :wq を自分で入力して戻る", false);
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    return;
+  }
+
+  if (state.screen === "progress") {
+    learningPanel.hidden = false;
+    panelTitle.textContent = "進捗ページ";
+    panelDescription.textContent = "現在のミッション進捗、スコア、リスクを確認できます。`exit` または `back` で戻ります。";
+    addGoal("exit または back: 前の画面へ戻る", false);
+    addGoal("start: 新しくゲームを始める", false);
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = "";
+    return;
+  }
+
+  if (state.screen === "typing") {
+    const question = getCurrentTypingQuestion();
+    learningPanel.hidden = false;
+    panelTitle.textContent = "タイピング練習";
+    panelDescription.textContent = question ? `意味とコマンドを見ながら、正確に入力します。${typingModeNote}` : "練習を完了しました。`typing` でもう一度、`challenge` で本番です。";
+    addGoal(`正解: ${state.typing.correctCount}/${state.typing.questions.length}`, false);
+    addGoal(`ミス: ${state.typing.mistakeCount}`, false);
+    if (question) {
+      addGoal(`意味: ${question.meaning}`, false);
+      addGoal(`入力: ${question.command}`, false);
+    }
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = state.typing.lastFeedback;
+    return;
+  }
+
+  if (state.screen === "challenge") {
+    const question = getCurrentTypingQuestion();
+    const elapsed = getChallengeElapsedSeconds();
+    learningPanel.hidden = false;
+    panelTitle.textContent = "本番タイムアタック";
+    panelDescription.textContent = question ? `意味だけを見て、対応するコマンドを入力します。Enter時の不正解は1秒追加です。${typingModeNote}` : "結果を集計しています。";
+    addGoal(`問題: ${Math.min(state.typing.currentIndex + 1, state.typing.questions.length)}/${state.typing.questions.length}`, false);
+    addGoal(`経過: ${formatSeconds(elapsed)}`, false);
+    addGoal(`ペナルティ: +${state.typing.penaltySeconds}s`, false);
+    addGoal(`正解: ${state.typing.correctCount}`, false);
+    addGoal(`誤答: ${state.typing.mistakeCount}`, false);
+    if (question) {
+      addGoal(`意味: ${question.meaning}`, false);
+    }
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = state.typing.lastFeedback;
+    return;
+  }
+
+  if (state.screen === "challenge-result") {
+    const result = state.typing.result;
+    learningPanel.hidden = false;
+    panelTitle.textContent = "タイムアタック結果";
+    panelDescription.textContent = "`challenge` で再挑戦、`typing` で練習、`exit` でトップへ戻れます。";
+    if (result) {
+      addGoal(`最終タイム: ${formatSeconds(result.finalSeconds)}`, false);
+      addGoal(`素の経過: ${formatSeconds(result.elapsedSeconds)}`, false);
+      addGoal(`ペナルティ: +${result.penaltySeconds}s`, false);
+      addGoal(`正確率: ${Math.round(result.accuracy * 100)}%`, false);
+      addGoal(`ランク: ${result.rank}`, false);
+    }
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = "";
+    return;
+  }
+
+  if (state.screen === "game") {
+    const mission = missions[state.currentMissionIndex];
+    panelTitle.textContent = mission ? mission.title : "Training Complete";
+    panelDescription.textContent = mission ? `${mission.description} 離脱する時は exit、進捗確認は progress と入力します。` : "すべてのモックミッションを完了しました。`restart` で最初から遊べます。";
+    hintButton.disabled = !mission || state.completedCurrentMission;
+    nextButton.disabled = !state.completedCurrentMission;
+    if (mission) {
+      mission.goals.forEach((goal) => addGoal(goal.label, isGoalDone(goal)));
+    }
+    return;
+  }
+}
+
+function addGoal(text, done) {
+  const item = document.createElement("div");
+  item.className = done ? "goal-item done" : "goal-item";
+  const mark = document.createElement("span");
+  mark.className = "goal-mark";
+  mark.textContent = done ? "OK" : "-";
+  const label = document.createElement("span");
+  label.textContent = text;
+  item.append(mark, label);
+  goalList.appendChild(item);
+}
+
+function clearNode(node) {
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function startBootSequence() {
+  commandInput.disabled = false;
+  commandInput.focus();
+  appendLine("system", "Linux Command Quest virtual console");
+  let index = 0;
+
+  const runNext = () => {
+    if (state.screen !== "boot") return;
+    if (index >= bootScript.length) {
+      showTopMenu();
+      return;
+    }
+    const entry = bootScript[index];
+    if (entry.type === "input") {
+      typeBootCommand(entry.text, () => {
+        index += 1;
+        state.bootTimer = window.setTimeout(runNext, 260);
+      });
+    } else {
+      appendLine(entry.type, entry.text);
+      render();
+      index += 1;
+      state.bootTimer = window.setTimeout(runNext, 420);
+    }
+  };
+
+  state.bootTimer = window.setTimeout(runNext, 500);
+}
+
+function typeBootCommand(text, done) {
+  let typed = "";
+  const prompt = "$";
+  const lineIndex = state.lines.length;
+  state.lines.push({ kind: "input", text: `${prompt} `, timestamp: Date.now() });
+  const tick = () => {
+    if (state.screen !== "boot") return;
+    typed = text.slice(0, typed.length + 1);
+    state.lines[lineIndex].text = `${prompt} ${typed}`;
+    render();
+    if (typed.length >= text.length) {
+      done();
+      return;
+    }
+    state.bootTimer = window.setTimeout(tick, 34);
+  };
+  tick();
+}
+
+function showTopMenu() {
+  window.clearTimeout(state.bootTimer);
+  stopChallengeTimer();
+  state.screen = "top";
+  state.lines = [];
+  titleArt.forEach((line) => appendLine("success", line));
+  appendLine("muted", "");
+  appendLine("system", "Training console initialized. Choose a command:");
+  appendLine("output", "[1] start     ゲームを始める");
+  appendLine("output", "[2] manual    遊び方と世界観を読む");
+  appendLine("output", "[3] credits   クレジットを見る");
+  appendLine("output", "[4] progress  進捗を見る");
+  if (state.gameStarted) {
+    appendLine("output", "[5] resume    中断したゲームへ戻る");
+  }
+  appendLine("output", "[6] typing    コマンドタイピング練習");
+  appendLine("output", "[7] challenge 本番タイムアタック");
+  appendLine("muted", "");
+  appendLine("muted", "Tip: typing で覚えて、challenge で20問タイムアタック。");
+  commandInput.value = "";
+  render();
+}
+
+function startGame() {
+  state.screen = "game";
+  state.lines = [];
+  state.currentPath = "/home/trainee";
+  state.fileSystem = createFileSystem();
+  state.executedCommands = [];
+  state.currentMissionIndex = 0;
+  state.completedMissionIds = [];
+  state.hintIndex = 0;
+  state.completedCurrentMission = false;
+  state.score = 1000;
+  state.risk = 0;
+  state.gameStarted = true;
+  appendLine("system", "Mission environment ready.");
+  appendLine("system", "Type help to see available commands.");
+  appendLine("muted", "");
+  appendLine("success", "Mission 1 loaded: 現在地を確認する");
+  hintText.textContent = "";
+  render();
+}
+
+function openManual() {
+  state.manualReturnScreen = state.screen === "game" ? "game" : "top";
+  state.screen = "manual";
+  state.lines = [];
+  manualText.forEach((line) => appendLine(line.startsWith("_") || line.startsWith("|") ? "success" : "output", line));
+  hintText.textContent = "終了するには :q! または :wq";
+  render();
+}
+
+function showProgressScreen(returnScreen) {
+  stopChallengeTimer();
+  state.progressReturnScreen = returnScreen;
+  state.screen = "progress";
+  state.lines = [];
+  appendLine("success", " ____                                      ");
+  appendLine("success", "|  _ \\ _ __ ___   __ _ _ __ ___  ___ ___ ");
+  appendLine("success", "| |_) | '__/ _ \\ / _` | '__/ _ \\/ __/ __|");
+  appendLine("success", "|  __/| | | (_) | (_| | | |  __/\\__ \\__ \\");
+  appendLine("success", "|_|   |_|  \\___/ \\__, |_|  \\___||___/___/");
+  appendLine("success", "                  |___/                   ");
+  appendLine("muted", "");
+  appendLine("system", "Training session progress");
+  appendLine("output", `Score: ${state.score}`);
+  appendLine("output", `Risk: ${state.risk >= 70 ? "INCIDENT" : state.risk >= 35 ? "WARN" : "LOW"} (${state.risk}/100)`);
+  appendLine("output", `Current path: ${state.currentPath}`);
+  appendLine("output", `Completed missions: ${state.completedMissionIds.length}/${missions.length}`);
+  appendLine("muted", "");
+  missions.forEach((mission, index) => {
+    const status = state.completedMissionIds.includes(mission.id)
+      ? "[DONE]"
+      : index === state.currentMissionIndex && state.gameStarted
+        ? "[NOW ]"
+        : "[WAIT]";
+    appendLine(status === "[DONE]" ? "success" : status === "[NOW ]" ? "system" : "muted", `${status} ${mission.title}`);
+  });
+  appendLine("muted", "");
+  appendLine("output", "exit または back で前の画面へ戻ります。start で新しく始められます。");
+  commandInput.value = "";
+  render();
+}
+
+function startTypingPractice() {
+  stopChallengeTimer();
+  state.typing = createTypingState();
+  state.typing.mode = "practice";
+  state.typing.questions = [...typingQuestions];
+  state.typing.startedAt = Date.now();
+  state.screen = "typing";
+  showTypingPracticeQuestion();
+}
+
+function showTypingPracticeQuestion() {
+  state.lines = [];
+  const question = getCurrentTypingQuestion();
+  appendLine("success", " _____             _               ");
+  appendLine("success", "|_   _|   _ _ __ (_)_ __   __ _   ");
+  appendLine("success", "  | || | | | '_ \\| | '_ \\ / _` |  ");
+  appendLine("success", "  | || |_| | |_) | | | | | (_| |  ");
+  appendLine("success", "  |_| \\__, | .__/|_|_| |_|\\__, |  ");
+  appendLine("success", "      |___/|_|            |___/   ");
+  appendLine("muted", "");
+  if (!question) {
+    appendLine("success", "Practice complete.");
+    appendLine("output", `Correct: ${state.typing.correctCount}/${state.typing.questions.length}`);
+    appendLine("output", `Mistakes: ${state.typing.mistakeCount}`);
+    appendLine("muted", "typing でもう一度、challenge で本番、exit でトップへ戻れます。");
+    render();
+    return;
+  }
+  appendLine("system", `Question ${state.typing.currentIndex + 1}/${state.typing.questions.length}`);
+  appendLine("output", `意味: ${question.meaning}`);
+  appendLine("output", `コマンド: ${question.command}`);
+  appendLine("muted", "");
+  appendLine("muted", typingModeNote);
+  appendLine("muted", "表示されたコマンドを入力してください。exit で戻ります。");
+  render();
+}
+
+function startChallenge() {
+  state.typing = createTypingState();
+  state.typing.mode = "challenge";
+  state.typing.questions = createChallengeQuestions();
+  state.typing.startedAt = Date.now();
+  state.screen = "challenge";
+  startChallengeTimer();
+  showChallengeQuestion();
+}
+
+function createChallengeQuestions() {
+  const questions = [];
+  for (let index = 0; index < 20; index += 1) {
+    questions.push(typingQuestions[Math.floor(Math.random() * typingQuestions.length)]);
+  }
+  return questions;
+}
+
+function showChallengeQuestion() {
+  state.lines = [];
+  const question = getCurrentTypingQuestion();
+  appendLine("success", "  ____ _           _ _                       ");
+  appendLine("success", " / ___| |__   __ _| | | ___ _ __   __ _  ___");
+  appendLine("success", "| |   | '_ \\ / _` | | |/ _ \\ '_ \\ / _` |/ _ \\");
+  appendLine("success", "| |___| | | | (_| | | |  __/ | | | (_| |  __/");
+  appendLine("success", " \\____|_| |_|\\__,_|_|_|\\___|_| |_|\\__, |\\___|");
+  appendLine("success", "                                  |___/      ");
+  appendLine("muted", "");
+  if (!question) {
+    finishChallenge();
+    return;
+  }
+  appendLine("system", `Question ${state.typing.currentIndex + 1}/${state.typing.questions.length}`);
+  appendLine("output", `意味: ${question.meaning}`);
+  appendLine("muted", "");
+  appendLine("muted", typingModeNote);
+  appendLine("muted", "正解コマンドを入力してください。Enter時の不正解は +1秒。exit で中断。");
+  render();
+}
+
+function finishChallenge() {
+  stopChallengeTimer();
+  state.typing.endedAt = Date.now();
+  const elapsedSeconds = getChallengeElapsedSeconds();
+  const penaltySeconds = state.typing.penaltySeconds;
+  const finalSeconds = elapsedSeconds + penaltySeconds;
+  const inputCount = state.typing.correctCount + state.typing.mistakeCount;
+  const accuracy = inputCount === 0 ? 0 : state.typing.correctCount / inputCount;
+  const rank = getChallengeRank(finalSeconds, accuracy);
+  state.typing.result = {
+    elapsedSeconds,
+    penaltySeconds,
+    finalSeconds,
+    correctCount: state.typing.correctCount,
+    mistakeCount: state.typing.mistakeCount,
+    accuracy,
+    rank
+  };
+  state.screen = "challenge-result";
+  state.lines = [];
+  appendLine("success", " ____                 _ _   ");
+  appendLine("success", "|  _ \\ ___  ___ _   _| | |_ ");
+  appendLine("success", "| |_) / _ \\/ __| | | | | __|");
+  appendLine("success", "|  _ <  __/\\__ \\ |_| | | |_ ");
+  appendLine("success", "|_| \\_\\___||___/\\__,_|_|\\__|");
+  appendLine("muted", "");
+  appendLine("output", `Final time: ${formatSeconds(finalSeconds)}`);
+  appendLine("output", `Elapsed: ${formatSeconds(elapsedSeconds)}`);
+  appendLine("output", `Penalty: +${penaltySeconds}s`);
+  appendLine("output", `Correct: ${state.typing.correctCount}`);
+  appendLine("output", `Wrong: ${state.typing.mistakeCount}`);
+  appendLine("output", `Accuracy: ${Math.round(accuracy * 100)}%`);
+  appendLine("success", `Rank: ${rank}`);
+  appendLine("muted", "");
+  appendLine("muted", "challenge で再挑戦、typing で練習、exit でトップへ戻ります。");
+  render();
+}
+
+function startChallengeTimer() {
+  stopChallengeTimer();
+  state.challengeTimer = window.setInterval(() => {
+    if (state.screen === "challenge") {
+      render();
+    }
+  }, 250);
+}
+
+function stopChallengeTimer() {
+  if (state.challengeTimer) {
+    window.clearInterval(state.challengeTimer);
+    state.challengeTimer = null;
+  }
+}
+
+function handleInput(rawInput) {
+  const input = rawInput.trim();
+  if (!input) return;
+  state.history.push(input);
+  state.historyIndex = null;
+  commandInput.value = "";
+
+  if (state.screen === "boot") {
+    showTopMenu();
+    return;
+  }
+
+  if (state.screen === "manual") {
+    appendPromptedInput(input);
+    handleManualInput(input);
+    render();
+    return;
+  }
+
+  appendPromptedInput(input);
+  if (state.screen === "progress") {
+    handleProgressInput(input);
+    render();
+    return;
+  }
+
+  if (state.screen === "typing") {
+    handleTypingInput(input);
+    render();
+    return;
+  }
+
+  if (state.screen === "challenge") {
+    handleChallengeInput(input);
+    render();
+    return;
+  }
+
+  if (state.screen === "challenge-result") {
+    handleChallengeResultInput(input);
+    render();
+    return;
+  }
+
+  if (state.screen === "top") {
+    handleTopInput(input);
+    render();
+    return;
+  }
+
+  if (state.screen === "game") {
+    handleGameInput(input);
+    render();
+  }
+}
+
+function handleTopInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "start" || normalized === "1") {
+    startGame();
+    return;
+  }
+  if (normalized === "manual" || normalized === "2" || normalized === "vi manual.txt") {
+    openManual();
+    return;
+  }
+  if (normalized === "credits" || normalized === "3") {
+    appendLine("system", "Linux Command Quest mock");
+    appendLine("output", "Created as a browser-only training prototype.");
+    appendLine("muted", "start / manual / credits / progress から選択できます。");
+    return;
+  }
+  if (normalized === "progress" || normalized === "4") {
+    showProgressScreen("top");
+    return;
+  }
+  if ((normalized === "resume" || normalized === "5") && state.gameStarted) {
+    resumeGame();
+    return;
+  }
+  if (normalized === "typing" || normalized === "6") {
+    startTypingPractice();
+    return;
+  }
+  if (normalized === "challenge" || normalized === "7") {
+    startChallenge();
+    return;
+  }
+  if (normalized === "help") {
+    appendLine("output", "available commands: start, manual, vi manual.txt, credits, progress, resume, typing, challenge");
+    return;
+  }
+  appendLine("error", `${input}: command not found`);
+  appendLine("warning", "ヒント: start または manual を入力してください。");
+}
+
+function handleTypingInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "exit") {
+    showTopMenu();
+    return;
+  }
+  if (normalized === "challenge") {
+    startChallenge();
+    return;
+  }
+  if (normalized === "typing") {
+    startTypingPractice();
+    return;
+  }
+
+  const question = getCurrentTypingQuestion();
+  if (!question) {
+    appendLine("warning", "練習は完了しています。typing / challenge / exit を入力できます。");
+    return;
+  }
+
+  if (input === question.command) {
+    state.typing.correctCount += 1;
+    state.typing.currentIndex += 1;
+    state.typing.hintRevealCount = 0;
+    state.typing.lastFeedback = "正解です。次のコマンドへ進みます。";
+    showTypingPracticeQuestion();
+    return;
+  }
+
+  state.typing.mistakeCount += 1;
+  state.typing.lastFeedback = getProgressiveCommandHint(question.command);
+  appendLine("warning", "不一致です。表示されているコマンドを正確に入力しましょう。");
+  appendLine("system", state.typing.lastFeedback);
+}
+
+function handleChallengeInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "exit") {
+    stopChallengeTimer();
+    showTopMenu();
+    return;
+  }
+
+  const question = getCurrentTypingQuestion();
+  if (!question) {
+    finishChallenge();
+    return;
+  }
+
+  if (input === question.command) {
+    state.typing.correctCount += 1;
+    state.typing.currentIndex += 1;
+    state.typing.hintRevealCount = 0;
+    state.typing.lastFeedback = "Correct.";
+    if (state.typing.currentIndex >= state.typing.questions.length) {
+      finishChallenge();
+    } else {
+      showChallengeQuestion();
+    }
+    return;
+  }
+
+  state.typing.mistakeCount += 1;
+  state.typing.penaltySeconds += 1;
+  state.typing.lastFeedback = `不正解です。+1秒。${getProgressiveCommandHint(question.command)}`;
+  appendLine("warning", "Wrong command. Penalty +1s.");
+  appendLine("system", state.typing.lastFeedback);
+}
+
+function handleChallengeResultInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "challenge") {
+    startChallenge();
+    return;
+  }
+  if (normalized === "typing") {
+    startTypingPractice();
+    return;
+  }
+  if (normalized === "exit" || normalized === "back") {
+    showTopMenu();
+    return;
+  }
+  appendLine("error", `${input}: command not found`);
+  appendLine("warning", "challenge / typing / exit を入力してください。");
+}
+
+function handleProgressInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "exit" || normalized === "back" || normalized === ":q!" || normalized === ":wq") {
+    if (state.progressReturnScreen === "game" && state.gameStarted) {
+      resumeGame();
+    } else {
+      showTopMenu();
+    }
+    return;
+  }
+  if (normalized === "start") {
+    startGame();
+    return;
+  }
+  appendLine("error", `${input}: command not found`);
+  appendLine("warning", "戻るには exit または back を入力してください。");
+}
+
+function handleManualInput(input) {
+  if (input === ":q!" || input === ":wq") {
+    if (state.manualReturnScreen === "game") {
+      state.screen = "game";
+      state.lines = [];
+      appendLine("system", "Returned from manual.txt.");
+      appendLine("system", "Type help to see available commands.");
+      render();
+    } else {
+      showTopMenu();
+    }
+    return;
+  }
+  if (["i", "a", "o"].includes(input)) {
+    appendLine("warning", "manual.txt is readonly. インサートモードはこのモックでは使えません。");
+    return;
+  }
+  appendLine("error", "E492: Not an editor command");
+  appendLine("warning", "戻るには :q! または :wq を入力してください。");
+}
+
+function handleGameInput(input) {
+  if (input.toLowerCase() === "exit") {
+    appendLine("system", "Leaving current training session. Progress is kept in memory.");
+    showTopMenu();
+    return;
+  }
+  if (input.toLowerCase() === "progress") {
+    showProgressScreen("game");
+    return;
+  }
+  if (input.toLowerCase() === "restart") {
+    startGame();
+    return;
+  }
+  if (input.toLowerCase() === "next") {
+    goNextMission();
+    return;
+  }
+
+  const parsed = parseCommand(input);
+  const danger = detectDangerousCommand(parsed, input);
+  if (danger) {
+    applyIncident(danger);
+    recordCommand(parsed.command, input);
+    checkMissionCompletion();
+    return;
+  }
+
+  dispatchCommand(parsed, input);
+  recordCommand(parsed.command, input);
+  checkMissionCompletion();
+}
+
+function resumeGame() {
+  state.screen = "game";
+  state.lines = [];
+  appendLine("system", "Resumed training session.");
+  appendLine("system", "Type help to see available commands. Type exit to return to top menu.");
+  const mission = missions[state.currentMissionIndex];
+  if (mission) {
+    appendLine("success", `${mission.title} active.`);
+  } else {
+    appendLine("success", "All mock missions complete. restart で最初から遊べます。");
+  }
+  hintText.textContent = "";
+  render();
+}
+
+function parseCommand(input) {
+  const tokens = input.split(/\s+/).filter(Boolean);
+  return { command: tokens[0] || "", args: tokens.slice(1) };
+}
+
+function dispatchCommand(parsed, rawInput) {
+  const handlers = {
+    pwd: executePwd,
+    ls: executeLs,
+    cd: executeCd,
+    cat: executeCat,
+    cp: executeCp,
+    chmod: executeChmod,
+    vi: executeVi,
+    clear: executeClear,
+    help: executeHelp
+  };
+  const handler = handlers[parsed.command];
+  if (!handler) {
+    appendLine("error", `${parsed.command}: command not found`);
+    appendLine("warning", "このモックで使えるコマンドは help で確認できます。");
+    state.score = Math.max(0, state.score - 10);
+    return;
+  }
+  handler(parsed.args, rawInput);
+}
+
+function detectDangerousCommand(parsed, rawInput) {
+  const text = rawInput.trim();
+  if (parsed.command === "rm") {
+    return {
+      level: text.includes("-rf") ? "incident" : "warning",
+      title: "削除コマンドを検知",
+      message: "MVPでは rm は実行されません。削除はインシデント訓練で扱います。",
+      penalty: text.includes("-rf") ? 160 : 60
+    };
+  }
+  if (parsed.command === "chmod" && parsed.args.includes("-R") && parsed.args.includes("777")) {
+    return {
+      level: "incident",
+      title: "重大な権限事故",
+      message: "chmod -R 777 は広範囲のファイルを誰でも変更可能にする危険操作です。",
+      penalty: 180
+    };
+  }
+  if (parsed.command === "chmod" && parsed.args[0] === "777") {
+    return {
+      level: "warning",
+      title: "過剰な権限",
+      message: "777 は全員に読み書き実行を許可します。必要最小限の権限を考えましょう。",
+      penalty: 80,
+      allowAfterWarning: true
+    };
+  }
+  if (/[|;&`$<>]/.test(text)) {
+    return {
+      level: "warning",
+      title: "未対応のシェル構文",
+      message: "パイプ、リダイレクト、サブシェルは安全のためMVPでは実行しません。",
+      penalty: 40
+    };
+  }
+  return null;
+}
+
+function applyIncident(incident) {
+  appendLine(incident.level === "incident" ? "error" : "warning", `[${incident.title}] ${incident.message}`);
+  appendLine("system", "実OSには影響しません。これは仮想環境内の安全な警告です。");
+  state.score = Math.max(0, state.score - incident.penalty);
+  state.risk = Math.min(100, state.risk + (incident.level === "incident" ? 45 : 22));
+  hintText.textContent = incident.message;
+}
+
+function recordCommand(command, rawInput) {
+  state.executedCommands.push({ command, rawInput, path: state.currentPath });
+}
+
+function executePwd() {
+  appendLine("output", state.currentPath);
+  state.score += 8;
+}
+
+function executeLs(args) {
+  const longMode = args[0] === "-l";
+  const targetArg = longMode ? args[1] : args[0];
+  const targetPath = resolvePath(targetArg || state.currentPath);
+  const node = getNode(targetPath);
+  if (!node) {
+    appendLine("error", `ls: cannot access '${targetArg}': No such file or directory`);
+    appendLine("warning", "ヒント: pwd と ls で現在地や候補を確認しましょう。");
+    state.score = Math.max(0, state.score - 8);
+    return;
+  }
+  if (node.type === "file") {
+    appendLine("output", node.name);
+    return;
+  }
+  const names = Object.keys(node.children).sort();
+  if (longMode) {
+    names.forEach((name) => {
+      const child = node.children[name];
+      appendLine("output", `${modeText(child)} ${child.owner} ${child.group} ${name}`);
+    });
+  } else {
+    appendLine("output", names.join("  "));
+  }
+  state.score += 8;
+}
+
+function executeCd(args) {
+  if (args.length === 0) {
+    state.currentPath = "/home/trainee";
+    return;
+  }
+  const targetPath = resolvePath(args[0]);
+  const node = getNode(targetPath);
+  if (!node) {
+    appendLine("error", `cd: ${args[0]}: No such file or directory`);
+    appendLine("warning", "ヒント: ls で移動できるディレクトリを確認しましょう。");
+    state.score = Math.max(0, state.score - 8);
+    return;
+  }
+  if (node.type !== "directory") {
+    appendLine("error", `cd: ${args[0]}: Not a directory`);
+    return;
+  }
+  state.currentPath = targetPath;
+  state.score += 10;
+}
+
+function executeCat(args) {
+  if (args.length === 0) {
+    appendLine("error", "cat: missing operand");
+    return;
+  }
+  const targetPath = resolvePath(args[0]);
+  const node = getNode(targetPath);
+  if (!node) {
+    appendLine("error", `cat: ${args[0]}: No such file or directory`);
+    return;
+  }
+  if (node.type !== "file") {
+    appendLine("error", `cat: ${args[0]}: Is a directory`);
+    return;
+  }
+  appendLine("output", node.content);
+  state.score += 10;
+}
+
+function executeCp(args) {
+  if (args.length < 2) {
+    appendLine("error", "cp: missing file operand");
+    return;
+  }
+  const sourcePath = resolvePath(args[0]);
+  const destPath = resolvePath(args[1]);
+  const sourceNode = getNode(sourcePath);
+  if (!sourceNode) {
+    appendLine("error", `cp: cannot stat '${args[0]}': No such file or directory`);
+    return;
+  }
+  if (sourceNode.type !== "file") {
+    appendLine("error", "cp: omitting directory");
+    appendLine("warning", "MVPではファイルコピーのみ対応しています。");
+    return;
+  }
+  const parent = getParentNode(destPath);
+  if (!parent) {
+    appendLine("error", `cp: cannot create regular file '${args[1]}': No such file or directory`);
+    return;
+  }
+  const name = basename(destPath);
+  parent.children[name] = { ...sourceNode, name };
+  appendLine("success", `${args[0]} -> ${args[1]}`);
+  state.score += 24;
+}
+
+function executeChmod(args) {
+  if (args.length < 2) {
+    appendLine("error", "chmod: missing operand");
+    return;
+  }
+  const mode = args[0];
+  if (!/^[0-7]{3}$/.test(mode)) {
+    appendLine("error", `chmod: invalid mode: '${mode}'`);
+    appendLine("warning", "MVPでは 755 のような3桁数値モードに対応しています。");
+    return;
+  }
+  const targetPath = resolvePath(args[1]);
+  const node = getNode(targetPath);
+  if (!node) {
+    appendLine("error", `chmod: cannot access '${args[1]}': No such file or directory`);
+    return;
+  }
+  node.mode = mode;
+  appendLine("success", `mode of '${args[1]}' changed to ${mode}`);
+  state.score += mode === "777" ? 0 : 24;
+}
+
+function executeVi(args) {
+  if (args.length === 0) {
+    appendLine("error", "vi: missing file operand");
+    return;
+  }
+  const targetPath = args[0] === "manual.txt" ? "/home/trainee/manual.txt" : resolvePath(args[0]);
+  const node = getNode(targetPath);
+  if (!node) {
+    appendLine("error", `vi: ${args[0]}: No such file or directory`);
+    return;
+  }
+  if (node.type !== "file") {
+    appendLine("error", `vi: ${args[0]}: Is a directory`);
+    return;
+  }
+  state.manualReturnScreen = "game";
+  state.screen = "manual";
+  state.lines = [];
+  node.content.split("\n").forEach((line) => appendLine("output", line));
+  appendLine("muted", "");
+  appendLine("muted", `"${args[0]}" [readonly]`);
+}
+
+function executeClear() {
+  state.lines = [];
+}
+
+function executeHelp() {
+  appendLine("output", "available commands: pwd, ls, ls -l, cd, cat, cp, chmod, vi, clear, help");
+  appendLine("output", "mission commands: next, restart, progress, exit");
+  appendLine("muted", "危険操作は実行されず、ゲーム内警告として扱われます。");
+}
+
+function resolvePath(path) {
+  if (!path || path === ".") return state.currentPath;
+  const baseParts = path.startsWith("/") ? [] : state.currentPath.split("/").filter(Boolean);
+  const parts = path.split("/").filter(Boolean);
+  parts.forEach((part) => {
+    if (part === ".") return;
+    if (part === "..") {
+      baseParts.pop();
+      return;
+    }
+    baseParts.push(part);
+  });
+  return `/${baseParts.join("/")}`;
+}
+
+function getNode(path) {
+  const normalized = resolvePath(path);
+  if (normalized === "/") return state.fileSystem;
+  const parts = normalized.split("/").filter(Boolean);
+  let node = state.fileSystem;
+  for (const part of parts) {
+    if (!node || node.type !== "directory" || !node.children[part]) return null;
+    node = node.children[part];
+  }
+  return node;
+}
+
+function getParentNode(path) {
+  const parts = resolvePath(path).split("/").filter(Boolean);
+  parts.pop();
+  return getNode(`/${parts.join("/")}`);
+}
+
+function basename(path) {
+  const parts = resolvePath(path).split("/").filter(Boolean);
+  return parts[parts.length - 1] || "";
+}
+
+function modeText(node) {
+  const type = node.type === "directory" ? "d" : "-";
+  const digits = node.mode.padStart(3, "0").slice(-3);
+  const triplets = digits.split("").map((digit) => {
+    const value = Number(digit);
+    return `${value & 4 ? "r" : "-"}${value & 2 ? "w" : "-"}${value & 1 ? "x" : "-"}`;
+  });
+  return `${type}${triplets.join("")}`;
+}
+
+function isGoalDone(goal) {
+  if (goal.type === "commandExecuted") {
+    return state.executedCommands.some((entry) => entry.command === goal.command);
+  }
+  if (goal.type === "commandExecutedInPath") {
+    return state.executedCommands.some((entry) => entry.command === goal.command && entry.path === goal.path);
+  }
+  if (goal.type === "currentPath") {
+    return state.currentPath === goal.path;
+  }
+  if (goal.type === "fileExists") {
+    return Boolean(getNode(goal.path));
+  }
+  if (goal.type === "fileMode") {
+    const node = getNode(goal.path);
+    return Boolean(node && node.mode === goal.mode);
+  }
+  return false;
+}
+
+function checkMissionCompletion() {
+  const mission = missions[state.currentMissionIndex];
+  if (!mission || state.completedCurrentMission) return;
+  const done = mission.goals.every(isGoalDone);
+  if (!done) return;
+  state.completedCurrentMission = true;
+  if (!state.completedMissionIds.includes(mission.id)) {
+    state.completedMissionIds.push(mission.id);
+  }
+  state.score += 60;
+  state.risk = Math.max(0, state.risk - 10);
+  appendLine("success", "");
+  appendLine("success", `[MISSION COMPLETE] ${mission.completionMessage}`);
+  appendLine("system", "次のミッションへ進むには next と入力するか、学習パネルの「次へ」を押してください。");
+}
+
+function goNextMission() {
+  if (!state.completedCurrentMission) {
+    appendLine("warning", "現在のミッションはまだ完了していません。");
+    render();
+    return;
+  }
+  state.currentMissionIndex += 1;
+  state.hintIndex = 0;
+  state.completedCurrentMission = false;
+  hintText.textContent = "";
+  const mission = missions[state.currentMissionIndex];
+  if (!mission) {
+    appendLine("success", "All mock missions complete.");
+    appendLine("system", "restart で最初から遊べます。");
+    render();
+    return;
+  }
+  appendLine("muted", "");
+  appendLine("success", `${mission.title} loaded.`);
+  render();
+}
+
+function showHint() {
+  if (state.screen !== "game") return;
+  const mission = missions[state.currentMissionIndex];
+  if (!mission || state.completedCurrentMission) return;
+  const hint = mission.hints[Math.min(state.hintIndex, mission.hints.length - 1)];
+  hintText.textContent = hint;
+  state.hintIndex = Math.min(state.hintIndex + 1, mission.hints.length - 1);
+  state.score = Math.max(0, state.score - 12);
+  render();
+}
+
+function getCurrentTypingQuestion() {
+  return state.typing.questions[state.typing.currentIndex] || null;
+}
+
+function getChallengeElapsedSeconds() {
+  if (!state.typing.startedAt) return 0;
+  const end = state.typing.endedAt || Date.now();
+  return Math.max(0, Math.floor((end - state.typing.startedAt) / 1000));
+}
+
+function formatSeconds(seconds) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = String(safeSeconds % 60).padStart(2, "0");
+  return `${minutes}:${rest}`;
+}
+
+function getChallengeRank(finalSeconds, accuracy) {
+  if (finalSeconds <= 60 && accuracy >= 0.95) return "S";
+  if (finalSeconds <= 90 && accuracy >= 0.9) return "A";
+  if (finalSeconds <= 120 && accuracy >= 0.8) return "B";
+  return "C";
+}
+
+function getProgressiveCommandHint(expected) {
+  state.typing.hintRevealCount = Math.min(expected.length, state.typing.hintRevealCount + 1);
+  const prefix = expected.slice(0, state.typing.hintRevealCount);
+  return `ヒント: ${prefix}から始まる${expected.length}文字です`;
+}
+
+commandInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    handleInput(commandInput.value);
+    return;
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    if (state.history.length === 0) return;
+    if (state.historyIndex === null) {
+      state.historyIndex = state.history.length - 1;
+    } else {
+      state.historyIndex = Math.max(0, state.historyIndex - 1);
+    }
+    commandInput.value = state.history[state.historyIndex];
+    return;
+  }
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    if (state.historyIndex === null) return;
+    state.historyIndex += 1;
+    if (state.historyIndex >= state.history.length) {
+      state.historyIndex = null;
+      commandInput.value = "";
+    } else {
+      commandInput.value = state.history[state.historyIndex];
+    }
+  }
+});
+
+hintButton.addEventListener("click", showHint);
+nextButton.addEventListener("click", goNextMission);
+window.addEventListener("resize", resizeCanvas);
+document.addEventListener("click", () => commandInput.focus());
+
+resizeCanvas();
+startBootSequence();

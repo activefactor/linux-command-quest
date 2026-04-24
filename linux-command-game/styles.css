@@ -1,0 +1,279 @@
+:root {
+  color-scheme: dark;
+  --terminal-bg: #050607;
+  --terminal-green: #8ff0a4;
+  --terminal-white: #d7ded7;
+  --terminal-muted: #77847c;
+  --terminal-error: #ff6b6b;
+  --terminal-warning: #ffd166;
+  --terminal-success: #7ee787;
+  --panel-bg: rgba(11, 18, 20, 0.44);
+  --panel-border: rgba(210, 235, 224, 0.38);
+  --panel-text: #edf5ef;
+  --panel-muted: #aec0b6;
+  --accent: #66d9ef;
+  --amber: #ffcf70;
+  --danger: #ff7a90;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(5, 6, 7, 0.12), rgba(5, 6, 7, 0.62)),
+    #12191b;
+  color: var(--panel-text);
+  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+}
+
+.linux-stage {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(150, 170, 160, 0.28);
+  background: var(--terminal-bg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.linux-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 50%, rgba(0, 0, 0, 0.045) 50%),
+    radial-gradient(circle at 70% 12%, rgba(102, 217, 239, 0.12), transparent 28%);
+  background-size: 100% 4px, 100% 100%;
+  mix-blend-mode: screen;
+}
+
+.terminal-canvas {
+  display: block;
+  width: 100%;
+  height: calc(100% - 54px);
+}
+
+.command-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 54px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border-top: 1px solid rgba(150, 170, 160, 0.24);
+  background: rgba(3, 4, 5, 0.96);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.prompt-label {
+  color: var(--terminal-green);
+  white-space: nowrap;
+}
+
+.command-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--terminal-white);
+  caret-color: var(--terminal-green);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.learning-panel {
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  width: min(390px, calc(100vw - 68px));
+  max-height: calc(100vh - 132px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(22, 34, 36, 0.5), var(--panel-bg));
+  backdrop-filter: blur(8px) saturate(1.12);
+  -webkit-backdrop-filter: blur(8px) saturate(1.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 54px rgba(0, 0, 0, 0.22);
+}
+
+.panel-kicker {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.learning-panel h1 {
+  margin: 8px 0 8px;
+  color: var(--panel-text);
+  font-size: 21px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.learning-panel p {
+  margin: 0;
+  color: var(--panel-muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.goal-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.goal-item {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: start;
+  color: #dbe8df;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.goal-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(219, 232, 223, 0.38);
+  color: var(--terminal-muted);
+  font-size: 11px;
+}
+
+.goal-item.done .goal-mark {
+  border-color: rgba(126, 231, 135, 0.7);
+  color: var(--terminal-success);
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.panel-actions button {
+  border: 1px solid rgba(220, 235, 226, 0.24);
+  border-radius: 6px;
+  background: rgba(237, 245, 239, 0.08);
+  color: var(--panel-text);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.panel-actions button:hover {
+  background: rgba(102, 217, 239, 0.14);
+  border-color: rgba(102, 217, 239, 0.48);
+}
+
+.panel-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.hint-text {
+  min-height: 22px;
+  margin-top: 12px;
+  color: var(--amber);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.status-strip {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-strip > div {
+  border: 1px solid rgba(160, 190, 178, 0.24);
+  background: rgba(8, 13, 14, 0.82);
+  padding: 9px 12px;
+}
+
+.status-label {
+  display: block;
+  color: var(--terminal-muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+.status-strip strong {
+  display: block;
+  margin-top: 3px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+  color: var(--terminal-white);
+  letter-spacing: 0;
+}
+
+@media (max-width: 760px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    min-height: 100vh;
+    height: auto;
+    padding: 10px;
+  }
+
+  .linux-stage {
+    min-height: 72vh;
+  }
+
+  .learning-panel {
+    position: static;
+    width: auto;
+    max-height: none;
+    order: 2;
+  }
+
+  .status-strip {
+    grid-template-columns: 1fr;
+    order: 3;
+  }
+}

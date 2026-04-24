@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Linux Command Quest</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell" aria-label="Linux Command Quest">
+      <section class="linux-stage" aria-label="仮想Linux画面">
+        <canvas id="terminalCanvas" class="terminal-canvas"></canvas>
+        <div class="command-bar">
+          <span id="promptLabel" class="prompt-label">$</span>
+          <input
+            id="commandInput"
+            class="command-input"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            aria-label="コマンド入力"
+            autofocus
+          >
+        </div>
+      </section>
+
+      <aside id="learningPanel" class="learning-panel" aria-label="学習パネル">
+        <div class="panel-kicker">TRAINING OVERLAY</div>
+        <h1 id="panelTitle">Booting</h1>
+        <p id="panelDescription">仮想Linux環境を起動しています。</p>
+        <div id="goalList" class="goal-list"></div>
+        <div class="panel-actions">
+          <button id="hintButton" type="button">ヒント</button>
+          <button id="nextButton" type="button">次へ</button>
+        </div>
+        <div id="hintText" class="hint-text" aria-live="polite"></div>
+      </aside>
+
+      <section id="statusStrip" class="status-strip" aria-label="ステータス">
+        <div>
+          <span class="status-label">SCREEN</span>
+          <strong id="screenStatus">BOOT</strong>
+        </div>
+        <div>
+          <span class="status-label">SCORE</span>
+          <strong id="scoreStatus">1000</strong>
+        </div>
+        <div>
+          <span class="status-label">RISK</span>
+          <strong id="riskStatus">LOW</strong>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
