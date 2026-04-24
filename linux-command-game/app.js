@@ -649,11 +649,14 @@ function startChallenge() {
 }
 
 function createChallengeQuestions() {
-  const questions = [];
-  for (let index = 0; index < 20; index += 1) {
-    questions.push(typingQuestions[Math.floor(Math.random() * typingQuestions.length)]);
+  const shuffled = [...typingQuestions];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const current = shuffled[index];
+    shuffled[index] = shuffled[swapIndex];
+    shuffled[swapIndex] = current;
   }
-  return questions;
+  return shuffled.slice(0, Math.min(20, shuffled.length));
 }
 
 function showChallengeQuestion() {
