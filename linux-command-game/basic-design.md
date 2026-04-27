@@ -67,6 +67,8 @@ Browser
 | Top Menu | ASCIIアートタイトルとメニュー |
 | Manual Viewer | `vi manual.txt` で開く説明画面 |
 | Game Screen | ミッションを進めるメイン画面 |
+| Ops Mission Board | 実務ミッションを選択する画面 |
+| Ops Mission Screen | プロセス、ポート、DNS、ログ解析などの実務ミッション画面 |
 | Progress Screen | ミッション進捗を確認する画面 |
 | Typing Practice Screen | 意味とコマンドを見ながら練習する画面 |
 | Challenge Screen | 意味だけを見て20問を解く本番タイムアタック画面 |
@@ -123,19 +125,21 @@ Starting terminal trainer...
 | --- | --- |
 | `start` | Game Screen |
 | `1` | Game Screen |
+| `missions` | Ops Mission Board |
+| `2` | Ops Mission Board |
 | `manual` | Manual Viewer |
-| `2` | Manual Viewer |
+| `3` | Manual Viewer |
 | `vi manual.txt` | Manual Viewer |
 | `credits` | Credits表示 |
-| `3` | Credits表示 |
+| `4` | Credits表示 |
 | `progress` | Progress Screen |
-| `4` | Progress Screen |
+| `5` | Progress Screen |
 | `resume` | Game Screen |
-| `5` | Game Screen |
+| `6` | Game Screen |
 | `typing` | Typing Practice Screen |
-| `6` | Typing Practice Screen |
+| `7` | Typing Practice Screen |
 | `challenge` | Challenge Screen |
-| `7` | Challenge Screen |
+| `8` | Challenge Screen |
 | その他 | ヘルプ表示 |
 
 ### 3.4 Manual Viewer
@@ -199,7 +203,60 @@ Floating Learning UI Layer
 | `next` | クリア済みミッションから次へ進む |
 | `restart` | 新しいゲームとして最初から始める |
 
-### 3.6 Progress Screen
+### 3.6 Ops Mission Board
+
+#### 役割
+
+基本オペレーションとは別に、実務寄りの指令ミッションを選択させる。
+
+#### 表示内容
+
+- MISSION BOARDのASCII見出し
+- ミッション番号
+- ミッションID
+- ゲームらしいミッションタイトル
+- 対象分野
+- 難易度
+
+#### 入力
+
+| 入力 | 処理 |
+| --- | --- |
+| `1` | 暴走プロセス停止ミッションへ進む |
+| `2` | 8080番ポート調査ミッションへ進む |
+| `3` | DNS正引きミッションへ進む |
+| `4` | ログ解析ミッションへ進む |
+| `5` | ディスク逼迫調査ミッションへ進む |
+| `6` | サービス停止原因調査ミッションへ進む |
+| `exit` | Top Menuへ戻る |
+| `back` | Top Menuへ戻る |
+
+### 3.7 Ops Mission Screen
+
+#### 役割
+
+選択された実務ミッションの指令、必要な概念、想定コマンド、クリア条件を表示し、仮想Linux環境で調査させる。
+
+#### 表示内容
+
+- ミッションタイトル
+- 指令文
+- 必要な概念
+- 想定コマンド
+- クリア条件
+- ヒント
+- 回答入力欄
+
+#### 入力
+
+| 入力 | 処理 |
+| --- | --- |
+| Linux調査コマンド | 仮想環境で実行する |
+| `answer ...` | ミッション回答として判定する |
+| `hint` | 段階ヒントを表示する |
+| `exit` | Ops Mission Boardへ戻る |
+
+### 3.8 Progress Screen
 
 #### 役割
 
@@ -223,7 +280,7 @@ Floating Learning UI Layer
 | `:wq` | 前の画面へ戻る |
 | `start` | 新しいゲームを開始する |
 
-### 3.7 Typing Practice Screen
+### 3.9 Typing Practice Screen
 
 #### 役割
 
@@ -248,7 +305,7 @@ Linuxコマンドの意味とコマンド文字列を同時に表示し、反復
 | 不一致の入力 | 誤入力として表示する |
 | `exit` | Top Menuへ戻る |
 
-### 3.8 Challenge Screen
+### 3.10 Challenge Screen
 
 #### 役割
 
@@ -274,7 +331,7 @@ Linuxコマンドの意味とコマンド文字列を同時に表示し、反復
 | Enter時の不正解コマンド | 1秒ペナルティを加算し、同じ問題を継続 |
 | `exit` | 本番を中断してTop Menuへ戻る |
 
-### 3.9 Challenge Result Screen
+### 3.11 Challenge Result Screen
 
 #### 表示内容
 
@@ -300,7 +357,7 @@ Linuxコマンドの意味とコマンド文字列を同時に表示し、反復
 
 ```ts
 type AppState = {
-  screen: "boot" | "top" | "manual" | "game" | "progress" | "typing" | "challenge" | "challenge-result" | "result";
+  screen: "boot" | "top" | "manual" | "game" | "ops-board" | "ops-mission" | "progress" | "typing" | "challenge" | "challenge-result" | "result";
   terminal: TerminalState;
   linux: VirtualLinuxState;
   mission: MissionState;
@@ -431,7 +488,23 @@ type MissionGoal =
   | { type: "fileMode"; path: string; mode: string };
 ```
 
-### 5.6 IncidentEvent
+### 5.6 OpsMission
+
+```ts
+type OpsMission = {
+  id: string;
+  title: string;
+  briefing: string;
+  concepts: string[];
+  expectedCommands: string[];
+  goals: MissionGoal[];
+  answerType: "process" | "application" | "ip-address" | "error-message" | "file-path" | "root-cause";
+  expectedAnswer: string;
+  hints: string[];
+};
+```
+
+### 5.7 IncidentEvent
 
 ```ts
 type IncidentEvent = {
@@ -443,7 +516,7 @@ type IncidentEvent = {
 };
 ```
 
-### 5.7 TypingQuestion
+### 5.8 TypingQuestion
 
 ```ts
 type TypingQuestion = {
@@ -455,7 +528,7 @@ type TypingQuestion = {
 };
 ```
 
-### 5.8 ChallengeResult
+### 5.9 ChallengeResult
 
 ```ts
 type ChallengeResult = {
@@ -632,6 +705,8 @@ CanvasとHTML UIを描画する。
 - Linux Screen Renderer: CLI画面、ログ、プロンプトを描画
 - Boot Sequence Renderer: 自動タイピング演出を描画
 - Vi Viewer Renderer: マニュアル閲覧画面を描画
+- Ops Mission Board Renderer: 実務ミッション一覧を描画
+- Ops Mission Renderer: 実務ミッションの指令と進捗を描画
 - Progress Renderer: 進捗ページを描画
 - Typing Practice Renderer: 意味とコマンドを表示する練習画面を描画
 - Challenge Renderer: 意味、タイマー、ペナルティを表示する本番画面を描画
@@ -706,7 +781,20 @@ progress 入力
   -> 呼び出し元の画面へ戻る
 ```
 
-### 7.7 タイピング練習フロー
+### 7.7 実務ミッション選択フロー
+
+```text
+Top Menuで missions 入力
+  -> Ops Mission Board表示
+  -> 実務ミッション一覧を表示
+  -> ミッション番号またはIDを入力
+  -> Ops Mission Screen表示
+  -> ミッションごとの仮想環境を初期化
+  -> 調査コマンドと回答入力を受け付ける
+  -> クリア条件を満たしたら完了表示
+```
+
+### 7.8 タイピング練習フロー
 
 ```text
 Top Menuで typing 入力
@@ -718,7 +806,7 @@ Top Menuで typing 入力
   -> exit 入力でTop Menuへ戻る
 ```
 
-### 7.8 本番タイムアタックフロー
+### 7.9 本番タイムアタックフロー
 
 ```text
 Top Menuで challenge 入力
@@ -733,7 +821,7 @@ Top Menuで challenge 入力
   -> Challenge Result Screen表示
 ```
 
-### 7.9 インシデントフロー
+### 7.10 インシデントフロー
 
 ```text
 危険操作入力
@@ -806,6 +894,7 @@ Linuxコマンドではなく、ゲームの画面遷移を制御する入力と
 - `resume`: Top Menuから中断中のGame Screenへ戻る
 - `next`: クリア済みミッションから次へ進む
 - `restart`: 新しいゲームとして初期化する
+- `missions`: Ops Mission Boardを表示する
 
 ## 9. ミッション設計
 
@@ -818,7 +907,18 @@ Linuxコマンドではなく、ゲームの画面遷移を制御する入力と
 | `mission-003` | 設定ファイルをバックアップする | `cp` |
 | `mission-004` | 実行権限を付与する | `chmod` |
 
-### 9.2 達成判定
+### 9.2 実務ミッション
+
+| ID | タイトル | 主な概念 | 主なコマンド |
+| --- | --- | --- | --- |
+| `ops-001` | 暴走プロセスを強制停止せよ | プロセス、PID、シグナル | `ps`, `kill`, `pkill` |
+| `ops-002` | 8080番ポートの使用者を特定せよ | ポート、待ち受け、プロセス | `ss`, `netstat`, `ps` |
+| `ops-003` | 対象URLのIPアドレスを特定せよ | DNS、正引き、Aレコード | `dig`, `nslookup` |
+| `ops-004` | ログからエラー事象を特定せよ | ログ、severity、エラー | `cat`, `less`, `grep`, `awk` |
+| `ops-005` | ディスク逼迫の原因を突き止めよ | ディスク使用率、ファイルサイズ | `df`, `du`, `find`, `sort` |
+| `ops-006` | 停止したサービスの原因を追跡せよ | サービス、systemd、ジャーナルログ | `systemctl`, `journalctl`, `ps` |
+
+### 9.3 達成判定
 
 達成判定は、コマンド履歴と仮想ファイルシステム状態をもとに行う。
 
@@ -829,7 +929,16 @@ Linuxコマンドではなく、ゲームの画面遷移を制御する入力と
 - 指定ファイルが存在する
 - 指定ファイルの権限が `755` である
 
-### 9.3 ヒント
+実務ミッションでは、コマンド履歴に加えて `answer ...` で入力された回答値を判定に使う。
+
+例:
+
+- 正しいPIDを停止した
+- 8080番ポートを使用しているアプリケーション名を回答した
+- 正引きで得たIPアドレスを回答した
+- ログ内のエラーメッセージを回答した
+
+### 9.4 ヒント
 
 ヒントは3段階とする。
 
@@ -837,7 +946,7 @@ Linuxコマンドではなく、ゲームの画面遷移を制御する入力と
 2. 引数の考え方を示す
 3. 入力例に近い形を示す
 
-### 9.4 タイピング問題セット
+### 9.5 タイピング問題セット
 
 タイピング練習と本番タイムアタックは、同じ `TypingQuestion` データを使用する。
 
