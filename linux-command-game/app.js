@@ -38,6 +38,14 @@ const manualArt = [
   "                                                   |___/ "
 ];
 
+const opsArt = [
+  " __  __ _         _               ____                      _ ",
+  "|  \\/  (_)___ ___(_) ___  _ __   | __ )  ___   __ _ _ __ __| |",
+  "| |\\/| | / __/ __| |/ _ \\| '_ \\  |  _ \\ / _ \\ / _` | '__/ _` |",
+  "| |  | | \\__ \\__ \\ | (_) | | | | | |_) | (_) | (_| | | | (_| |",
+  "|_|  |_|_|___/___/_|\\___/|_| |_| |____/ \\___/ \\__,_|_|  \\__,_|"
+];
+
 const typingModeNote = "※これはコマンドを覚えるゲームなのでオプションやパラメータは、省略しています";
 
 const manualText = [
@@ -52,10 +60,11 @@ const manualText = [
   "7. cp app.conf app.conf.bak で設定ファイルのバックアップを作れます。",
   "8. chmod 755 deploy.sh でスクリプトに実行権限を付けます。",
   "9. chmod 777 や rm -rf / のような危険操作は、ゲーム内インシデントとして扱われます。",
-  "10. typing で、意味とコマンドを見ながらタイピング練習ができます。",
-  "11. challenge で、意味だけを見て20問のタイムアタックに挑戦できます。",
-  `12. ${typingModeNote}`,
-  "13. 困ったらゲーム画面のヒントを見るか、help を入力してください。",
+  "10. missions で、障害対応チケット風の実務ミッションを選べます。",
+  "11. typing で、意味とコマンドを見ながらタイピング練習ができます。",
+  "12. challenge で、意味だけを見て20問のタイムアタックに挑戦できます。",
+  `13. ${typingModeNote}`,
+  "14. 困ったらゲーム画面のヒントを見るか、help を入力してください。",
   "",
   "この画面は vi 風の閲覧専用マニュアルです。編集はできません。",
   "終了するには :q! または :wq を入力してください。"
@@ -136,6 +145,87 @@ const missions = [
   }
 ];
 
+const opsMissions = [
+  {
+    id: "runaway-process",
+    title: "暴走プロセスを強制停止せよ",
+    incident: "CPU使用率が急上昇し、開発環境の応答が悪化しています。",
+    instruction: "プロセス一覧から暴走しているプロセスを特定し、対象だけを停止してください。",
+    concepts: ["プロセス", "プロセスID", "シグナル"],
+    commands: ["ps", "kill", "pkill"],
+    goals: ["ps でプロセス一覧を確認する", "CPU使用率が高いプロセスを特定する", "対象プロセスだけを kill または pkill で停止する"],
+    hints: ["まず ps を実行して、CPUが高いプロセスを探しましょう。", "PID 4321 の runaway-worker が異常値です。", "入力例: kill 4321"],
+    successMessage: "暴走プロセスだけを停止できました。PIDを確認してから止める判断ができています。",
+    check: "processStopped",
+    target: { pid: "4321", name: "runaway-worker" }
+  },
+  {
+    id: "port-8080",
+    title: "8080番ポートの使用者を特定せよ",
+    incident: "新しいアプリケーションが8080番ポートで起動できません。",
+    instruction: "8080番ポートをLISTENしているアプリケーション名を特定し、answer で回答してください。",
+    concepts: ["ポート", "待ち受け", "プロセス"],
+    commands: ["ss", "netstat", "ps", "answer"],
+    goals: ["ss または netstat で待ち受けポートを確認する", "8080番ポートのPIDを確認する", "アプリケーション名を answer で回答する"],
+    hints: ["ポートの確認には ss を使います。", "8080番ポートは PID 2840 がLISTENしています。", "入力例: answer node-api"],
+    successMessage: "8080番ポートの使用者を特定できました。ポートとプロセスを結びつける視点が良いです。",
+    check: "answer",
+    target: { answer: ["node-api", "node api", "2840"] }
+  },
+  {
+    id: "dns-forward",
+    title: "対象URLのIPアドレスを特定せよ",
+    incident: "監視対象のURLがどのIPへ向いているか確認が必要です。",
+    instruction: "DNSの正引き結果として得られるIPアドレスを answer で回答してください。",
+    concepts: ["DNS", "正引き", "Aレコード"],
+    commands: ["dig", "nslookup", "answer"],
+    goals: ["dig または nslookup で名前解決する", "AレコードのIPアドレスを読む", "IPアドレスを answer で回答する"],
+    hints: ["対象URLは api.training.local です。", "dig api.training.local を試しましょう。", "入力例: answer 203.0.113.24"],
+    successMessage: "正引き結果を特定できました。DNS確認は障害切り分けの入口になります。",
+    check: "answer",
+    target: { host: "api.training.local", answer: ["203.0.113.24"] }
+  },
+  {
+    id: "log-forensics",
+    title: "ログからエラー事象を特定せよ",
+    incident: "Webアプリケーションでエラーが発生しています。",
+    instruction: "ログファイルからERROR行を探し、発生しているエラーメッセージを answer で回答してください。",
+    concepts: ["ログファイル", "ログレベル", "severity"],
+    commands: ["cat", "less", "view", "grep", "awk", "answer"],
+    goals: ["/var/log/myapp/app.log を確認する", "ERROR を含む行を絞り込む", "エラーメッセージを answer で回答する"],
+    hints: ["対象ログは /var/log/myapp/app.log です。", "grep ERROR /var/log/myapp/app.log を試しましょう。", "入力例: answer database connection timeout"],
+    successMessage: "ログからエラー事象を特定できました。ログレベルで絞り込む流れが身についています。",
+    check: "answer",
+    target: { answer: ["database connection timeout", "db connection timeout"] }
+  },
+  {
+    id: "disk-pressure",
+    title: "ディスク逼迫の原因を突き止めよ",
+    incident: "/var のディスク使用率が急上昇しています。",
+    instruction: "容量を圧迫しているファイルまたはディレクトリを特定し、answer で回答してください。",
+    concepts: ["ディスク使用率", "ファイルサイズ", "ログ肥大化"],
+    commands: ["df", "du", "find", "sort", "answer"],
+    goals: ["df で使用率が高い領域を確認する", "du または find で大きいファイルを探す", "原因ファイルを answer で回答する"],
+    hints: ["まず df を実行して、逼迫している領域を見ます。", "du /var/log/myapp でログ容量を確認しましょう。", "入力例: answer /var/log/myapp/archive.log"],
+    successMessage: "ディスク逼迫の原因を特定できました。容量調査では大きい場所から絞り込むのが基本です。",
+    check: "answer",
+    target: { answer: ["/var/log/myapp/archive.log", "archive.log"] }
+  },
+  {
+    id: "service-down",
+    title: "停止したサービスの原因を追跡せよ",
+    incident: "アプリケーションサービス myapp が停止しています。",
+    instruction: "サービス状態と直近ログを確認し、停止原因を answer で回答してください。",
+    concepts: ["サービス", "systemd", "ジャーナルログ"],
+    commands: ["systemctl", "journalctl", "ps", "grep", "answer"],
+    goals: ["systemctl status myapp で状態を確認する", "journalctl -u myapp で直近ログを見る", "停止原因を answer で回答する"],
+    hints: ["まず systemctl status myapp を確認しましょう。", "journalctl -u myapp に原因メッセージがあります。", "入力例: answer missing environment file"],
+    successMessage: "停止原因を追跡できました。状態確認とログ確認を組み合わせられています。",
+    check: "answer",
+    target: { answer: ["missing environment file", "env.production missing", "/etc/myapp/env.production"] }
+  }
+];
+
 const state = {
   screen: "boot",
   lines: [],
@@ -155,6 +245,10 @@ const state = {
   manualReturnScreen: "top",
   progressReturnScreen: "top",
   gameStarted: false,
+  opsMissionId: null,
+  completedOpsMissionIds: [],
+  opsHintIndex: 0,
+  opsRuntime: createOpsRuntime(),
   typing: createTypingState()
 };
 
@@ -171,6 +265,36 @@ function createTypingState() {
     hintRevealCount: 0,
     lastFeedback: "",
     result: null
+  };
+}
+
+function createOpsRuntime() {
+  return {
+    processes: [
+      { pid: "1", user: "root", cpu: "0.0", mem: "0.3", command: "systemd", status: "running" },
+      { pid: "835", user: "root", cpu: "0.4", mem: "1.1", command: "sshd", status: "running" },
+      { pid: "1720", user: "trainee", cpu: "1.2", mem: "2.4", command: "bash", status: "running" },
+      { pid: "2840", user: "app", cpu: "3.8", mem: "7.6", command: "node-api", status: "running" },
+      { pid: "4321", user: "app", cpu: "98.7", mem: "18.4", command: "runaway-worker", status: "running" },
+      { pid: "5190", user: "app", cpu: "0.7", mem: "5.2", command: "log-shipper", status: "running" }
+    ],
+    ports: [
+      { proto: "tcp", state: "LISTEN", local: "0.0.0.0:22", pid: "835", app: "sshd" },
+      { proto: "tcp", state: "LISTEN", local: "0.0.0.0:8080", pid: "2840", app: "node-api" },
+      { proto: "tcp", state: "LISTEN", local: "127.0.0.1:5432", pid: "3011", app: "postgres" }
+    ],
+    dnsRecords: {
+      "api.training.local": "203.0.113.24",
+      "linux-command-quest.local": "192.0.2.15"
+    },
+    services: {
+      myapp: {
+        loaded: "loaded (/etc/systemd/system/myapp.service; enabled)",
+        active: "failed",
+        reason: "missing environment file /etc/myapp/env.production"
+      }
+    },
+    opsCommandHistory: []
   };
 }
 
@@ -198,6 +322,10 @@ function createFileSystem() {
     var: dir("var", {
       log: dir("log", {
         syslog: file("syslog", "system booted\ntraining sandbox ready\n", "644"),
+        myapp: dir("myapp", {
+          "app.log": file("app.log", "2026-04-28 08:54:01 INFO boot complete\n2026-04-28 09:01:13 WARN retrying upstream request\n2026-04-28 09:02:44 ERROR database connection timeout\n2026-04-28 09:02:45 INFO request finished with 500\n", "644"),
+          "archive.log": file("archive.log", "large archived application log\n", "644")
+        }),
         nginx: dir("nginx", {
           "access.log": file("access.log", "GET / 200\nGET /health 200\n", "644"),
           "error.log": file("error.log", "no critical errors\n", "644")
@@ -241,6 +369,13 @@ function appendPromptedInput(text) {
 function getPromptText() {
   if (state.screen === "game") {
     return `trainee@quest:${state.currentPath}$`;
+  }
+  if (state.screen === "ops-board") {
+    return "missions>";
+  }
+  if (state.screen === "ops-mission") {
+    const mission = getCurrentOpsMission();
+    return mission ? `ops:${mission.id}$` : "ops>";
   }
   if (state.screen === "typing") {
     return "practice>";
@@ -344,19 +479,50 @@ function renderPanel() {
   if (state.screen === "top") {
     learningPanel.hidden = false;
     panelTitle.textContent = "トップメニュー";
-    panelDescription.textContent = "`start` でミッション、`typing` で練習、`challenge` で20問タイムアタックを開始できます。";
+    panelDescription.textContent = "`start` で基本操作、`missions` で実務ミッション、`typing` で練習、`challenge` で20問タイムアタックを開始できます。";
     addGoal("start または 1: ゲームを始める", false);
-    addGoal("manual または 2: 遊び方を読む", false);
-    addGoal("credits または 3: クレジットを見る", false);
-    addGoal("progress または 4: 進捗を見る", false);
+    addGoal("missions または 2: 実務ミッションを選ぶ", false);
+    addGoal("manual または 3: 遊び方を読む", false);
+    addGoal("credits または 4: クレジットを見る", false);
+    addGoal("progress または 5: 進捗を見る", false);
     if (state.gameStarted) {
-      addGoal("resume または 5: 中断したゲームへ戻る", false);
+      addGoal("resume または 6: 中断したゲームへ戻る", false);
     }
-    addGoal("typing または 6: コマンド練習", false);
-    addGoal("challenge または 7: 本番タイムアタック", false);
+    addGoal("typing または 7: コマンド練習", false);
+    addGoal("challenge または 8: 本番タイムアタック", false);
     hintButton.disabled = true;
     nextButton.disabled = true;
     hintText.textContent = "";
+    return;
+  }
+
+  if (state.screen === "ops-board") {
+    learningPanel.hidden = false;
+    panelTitle.textContent = "実務ミッションボード";
+    panelDescription.textContent = "障害対応チケット風のミッションを選択します。番号またはミッションIDを入力してください。";
+    opsMissions.forEach((mission, index) => {
+      const done = state.completedOpsMissionIds.includes(mission.id);
+      addGoal(`${index + 1}: ${mission.title}`, done);
+    });
+    hintButton.disabled = true;
+    nextButton.disabled = true;
+    hintText.textContent = "`exit` でトップへ戻ります。";
+    return;
+  }
+
+  if (state.screen === "ops-mission") {
+    const mission = getCurrentOpsMission();
+    learningPanel.hidden = false;
+    panelTitle.textContent = mission ? mission.title : "実務ミッション";
+    panelDescription.textContent = mission ? `${mission.instruction} 迷ったらヒント、離脱は exit、一覧へ戻る時は back です。` : "`missions` でミッションを選び直してください。";
+    if (mission) {
+      mission.goals.forEach((goal) => addGoal(goal, isOpsGoalDone(mission, goal)));
+      addGoal(`概念: ${mission.concepts.join(" / ")}`, false);
+      addGoal(`主なコマンド: ${mission.commands.join(" / ")}`, false);
+    }
+    hintButton.disabled = !mission || isOpsMissionCompleted(mission);
+    nextButton.disabled = !mission || !isOpsMissionCompleted(mission);
+    hintText.textContent = isOpsMissionCompleted(mission) ? "クリア済みです。次へでミッションボードへ戻れます。" : hintText.textContent;
     return;
   }
 
@@ -525,16 +691,17 @@ function showTopMenu() {
   appendLine("muted", "");
   appendLine("system", "Training console initialized. Choose a command:");
   appendLine("output", "[1] start     ゲームを始める");
-  appendLine("output", "[2] manual    遊び方と世界観を読む");
-  appendLine("output", "[3] credits   クレジットを見る");
-  appendLine("output", "[4] progress  進捗を見る");
+  appendLine("output", "[2] missions  実務ミッションを選ぶ");
+  appendLine("output", "[3] manual    遊び方と世界観を読む");
+  appendLine("output", "[4] credits   クレジットを見る");
+  appendLine("output", "[5] progress  進捗を見る");
   if (state.gameStarted) {
-    appendLine("output", "[5] resume    中断したゲームへ戻る");
+    appendLine("output", "[6] resume    中断したゲームへ戻る");
   }
-  appendLine("output", "[6] typing    コマンドタイピング練習");
-  appendLine("output", "[7] challenge 本番タイムアタック");
+  appendLine("output", "[7] typing    コマンドタイピング練習");
+  appendLine("output", "[8] challenge 本番タイムアタック");
   appendLine("muted", "");
-  appendLine("muted", "Tip: typing で覚えて、challenge で20問タイムアタック。");
+  appendLine("muted", "Tip: missions で障害対応、typing で覚えて、challenge で20問タイムアタック。");
   commandInput.value = "";
   render();
 }
@@ -586,6 +753,7 @@ function showProgressScreen(returnScreen) {
   appendLine("output", `Risk: ${state.risk >= 70 ? "INCIDENT" : state.risk >= 35 ? "WARN" : "LOW"} (${state.risk}/100)`);
   appendLine("output", `Current path: ${state.currentPath}`);
   appendLine("output", `Completed missions: ${state.completedMissionIds.length}/${missions.length}`);
+  appendLine("output", `Completed ops missions: ${state.completedOpsMissionIds.length}/${opsMissions.length}`);
   appendLine("muted", "");
   missions.forEach((mission, index) => {
     const status = state.completedMissionIds.includes(mission.id)
@@ -596,8 +764,54 @@ function showProgressScreen(returnScreen) {
     appendLine(status === "[DONE]" ? "success" : status === "[NOW ]" ? "system" : "muted", `${status} ${mission.title}`);
   });
   appendLine("muted", "");
-  appendLine("output", "exit または back で前の画面へ戻ります。start で新しく始められます。");
+  opsMissions.forEach((mission) => {
+    const status = state.completedOpsMissionIds.includes(mission.id)
+      ? "[DONE]"
+      : mission.id === state.opsMissionId
+        ? "[NOW ]"
+        : "[WAIT]";
+    appendLine(status === "[DONE]" ? "success" : status === "[NOW ]" ? "system" : "muted", `${status} Ops: ${mission.title}`);
+  });
+  appendLine("muted", "");
+  appendLine("output", "exit または back で前の画面へ戻ります。start で基本ミッション、missions で実務ミッション。");
   commandInput.value = "";
+  render();
+}
+
+function showOpsMissionBoard() {
+  stopChallengeTimer();
+  state.screen = "ops-board";
+  state.lines = [];
+  opsArt.forEach((line) => appendLine("success", line));
+  appendLine("muted", "");
+  appendLine("system", "MISSION BOARD");
+  appendLine("output", "監視アラートや障害対応チケットを選択してください。");
+  appendLine("muted", "");
+  opsMissions.forEach((mission, index) => {
+    const done = state.completedOpsMissionIds.includes(mission.id) ? "DONE" : "OPEN";
+    appendLine(done === "DONE" ? "success" : "output", `[${index + 1}] ${mission.id.padEnd(16)} ${mission.title}  (${done})`);
+  });
+  appendLine("muted", "");
+  appendLine("muted", "番号またはミッションIDを入力します。exit でトップへ戻ります。");
+  commandInput.value = "";
+  render();
+}
+
+function startOpsMission(mission) {
+  state.screen = "ops-mission";
+  state.opsMissionId = mission.id;
+  state.opsHintIndex = 0;
+  state.opsRuntime = createOpsRuntime();
+  state.lines = [];
+  hintText.textContent = "";
+  appendLine("error", `[ALERT] ${mission.incident}`);
+  appendLine("system", mission.instruction);
+  appendLine("muted", "");
+  appendLine("output", `Mission ID: ${mission.id}`);
+  appendLine("output", `Concepts: ${mission.concepts.join(", ")}`);
+  appendLine("output", `Commands: ${mission.commands.join(", ")}`);
+  appendLine("muted", "");
+  appendLine("muted", "help で利用可能コマンド、hint でヒント、back でミッションボード、exit でトップへ戻ります。");
   render();
 }
 
@@ -761,6 +975,18 @@ function handleInput(rawInput) {
     return;
   }
 
+  if (state.screen === "ops-board") {
+    handleOpsBoardInput(input);
+    render();
+    return;
+  }
+
+  if (state.screen === "ops-mission") {
+    handleOpsMissionInput(input);
+    render();
+    return;
+  }
+
   if (state.screen === "typing") {
     handleTypingInput(input);
     render();
@@ -797,38 +1023,98 @@ function handleTopInput(input) {
     startGame();
     return;
   }
-  if (normalized === "manual" || normalized === "2" || normalized === "vi manual.txt") {
+  if (normalized === "missions" || normalized === "mission" || normalized === "2") {
+    showOpsMissionBoard();
+    return;
+  }
+  if (normalized === "manual" || normalized === "3" || normalized === "vi manual.txt") {
     openManual();
     return;
   }
-  if (normalized === "credits" || normalized === "3") {
+  if (normalized === "credits" || normalized === "4") {
     appendLine("system", "Linux Command Quest mock");
     appendLine("output", "Created as a browser-only training prototype.");
-    appendLine("muted", "start / manual / credits / progress から選択できます。");
+    appendLine("muted", "start / missions / manual / credits / progress から選択できます。");
     return;
   }
-  if (normalized === "progress" || normalized === "4") {
+  if (normalized === "progress" || normalized === "5") {
     showProgressScreen("top");
     return;
   }
-  if ((normalized === "resume" || normalized === "5") && state.gameStarted) {
+  if ((normalized === "resume" || normalized === "6") && state.gameStarted) {
     resumeGame();
     return;
   }
-  if (normalized === "typing" || normalized === "6") {
+  if (normalized === "typing" || normalized === "7") {
     startTypingPractice();
     return;
   }
-  if (normalized === "challenge" || normalized === "7") {
+  if (normalized === "challenge" || normalized === "8") {
     startChallenge();
     return;
   }
   if (normalized === "help") {
-    appendLine("output", "available commands: start, manual, vi manual.txt, credits, progress, resume, typing, challenge");
+    appendLine("output", "available commands: start, missions, manual, vi manual.txt, credits, progress, resume, typing, challenge");
     return;
   }
   appendLine("error", `${input}: command not found`);
-  appendLine("warning", "ヒント: start または manual を入力してください。");
+  appendLine("warning", "ヒント: start / missions / manual のいずれかを入力してください。");
+}
+
+function handleOpsBoardInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "exit" || normalized === "back") {
+    showTopMenu();
+    return;
+  }
+  if (normalized === "help") {
+    appendLine("output", "番号、ミッションID、または exit を入力できます。例: 1 / runaway-process");
+    return;
+  }
+  const mission = findOpsMission(input);
+  if (mission) {
+    startOpsMission(mission);
+    return;
+  }
+  appendLine("error", `${input}: mission not found`);
+  appendLine("warning", "番号またはミッションIDを入力してください。例: 2 / port-8080");
+}
+
+function handleOpsMissionInput(input) {
+  const normalized = input.toLowerCase();
+  if (normalized === "exit") {
+    appendLine("system", "Leaving ops mission. Progress is kept in memory.");
+    showTopMenu();
+    return;
+  }
+  if (normalized === "back" || normalized === "missions") {
+    showOpsMissionBoard();
+    return;
+  }
+  if (normalized === "progress") {
+    showProgressScreen("ops-mission");
+    return;
+  }
+  if (normalized === "hint") {
+    showOpsHint();
+    return;
+  }
+  if (normalized === "next") {
+    if (isOpsMissionCompleted(getCurrentOpsMission())) {
+      showOpsMissionBoard();
+    } else {
+      appendLine("warning", "まだミッションは完了していません。");
+    }
+    return;
+  }
+
+  const parsed = parseCommand(input);
+  const danger = detectDangerousCommand(parsed, input);
+  if (danger) {
+    applyIncident(danger);
+    return;
+  }
+  dispatchOpsCommand(parsed, input);
 }
 
 function handleTypingInput(input) {
@@ -922,7 +1208,16 @@ function handleChallengeResultInput(input) {
 function handleProgressInput(input) {
   const normalized = input.toLowerCase();
   if (normalized === "exit" || normalized === "back" || normalized === ":q!" || normalized === ":wq") {
-    if (state.progressReturnScreen === "game" && state.gameStarted) {
+    if (state.progressReturnScreen === "ops-mission" && state.opsMissionId) {
+      state.screen = "ops-mission";
+      state.lines = [];
+      const mission = getCurrentOpsMission();
+      appendLine("system", "Returned to ops mission.");
+      if (mission) appendLine("success", `${mission.title} active.`);
+      render();
+    } else if (state.progressReturnScreen === "ops-board") {
+      showOpsMissionBoard();
+    } else if (state.progressReturnScreen === "game" && state.gameStarted) {
       resumeGame();
     } else {
       showTopMenu();
@@ -931,6 +1226,10 @@ function handleProgressInput(input) {
   }
   if (normalized === "start") {
     startGame();
+    return;
+  }
+  if (normalized === "missions") {
+    showOpsMissionBoard();
     return;
   }
   appendLine("error", `${input}: command not found`);
@@ -1030,6 +1329,44 @@ function dispatchCommand(parsed, rawInput) {
     state.score = Math.max(0, state.score - 10);
     return;
   }
+  handler(parsed.args, rawInput);
+}
+
+function dispatchOpsCommand(parsed, rawInput) {
+  const handlers = {
+    pwd: executePwd,
+    ls: executeLs,
+    cd: executeCd,
+    cat: executeCat,
+    less: executeReadonlyPager,
+    view: executeReadonlyPager,
+    grep: executeGrep,
+    awk: executeAwk,
+    ps: executePs,
+    kill: executeKill,
+    pkill: executePkill,
+    ss: executeSs,
+    netstat: executeNetstat,
+    dig: executeDig,
+    nslookup: executeNslookup,
+    df: executeDf,
+    du: executeDu,
+    find: executeFind,
+    sort: executeSort,
+    systemctl: executeSystemctl,
+    journalctl: executeJournalctl,
+    answer: executeAnswer,
+    clear: executeClear,
+    help: executeOpsHelp
+  };
+  const handler = handlers[parsed.command];
+  if (!handler) {
+    appendLine("error", `${parsed.command}: command not found`);
+    appendLine("warning", "この実務ミッションで使えるコマンドは help で確認できます。");
+    state.score = Math.max(0, state.score - 10);
+    return;
+  }
+  state.opsRuntime.opsCommandHistory.push({ command: parsed.command, rawInput, missionId: state.opsMissionId });
   handler(parsed.args, rawInput);
 }
 
@@ -1238,6 +1575,256 @@ function executeHelp() {
   appendLine("muted", "危険操作は実行されず、ゲーム内警告として扱われます。");
 }
 
+function executeOpsHelp() {
+  appendLine("output", "ops commands: ps, kill, pkill, ss, netstat, dig, nslookup, grep, awk, df, du, find, systemctl, journalctl");
+  appendLine("output", "file commands: pwd, ls, cat, less, view, clear");
+  appendLine("output", "mission commands: answer, hint, progress, back, exit");
+  appendLine("muted", "例: ps / ss / dig api.training.local / grep ERROR /var/log/myapp/app.log / answer node-api");
+}
+
+function executeReadonlyPager(args) {
+  executeCat(args);
+}
+
+function executeGrep(args) {
+  if (args.length < 2) {
+    appendLine("error", "grep: missing pattern or file");
+    return;
+  }
+  const pattern = args[0];
+  const targetPath = resolvePath(args[1]);
+  const node = getNode(targetPath);
+  if (!node || node.type !== "file") {
+    appendLine("error", `grep: ${args[1]}: No such file`);
+    return;
+  }
+  const matches = node.content.split("\n").filter((line) => line.includes(pattern));
+  if (matches.length === 0) {
+    appendLine("muted", "grep: no matches");
+  } else {
+    matches.forEach((line) => appendLine("output", line));
+  }
+  state.score += 14;
+}
+
+function executeAwk(args) {
+  if (args.length === 0) {
+    appendLine("error", "awk: missing program");
+    return;
+  }
+  const target = args[args.length - 1];
+  const node = getNode(resolvePath(target));
+  if (!node || node.type !== "file") {
+    appendLine("error", `awk: cannot open ${target}`);
+    return;
+  }
+  node.content
+    .split("\n")
+    .filter((line) => line.includes("ERROR"))
+    .forEach((line) => appendLine("output", line));
+  appendLine("muted", "awk mock: ERROR行のみ表示しました。");
+  state.score += 14;
+}
+
+function executePs() {
+  appendLine("output", "  PID USER       %CPU %MEM COMMAND");
+  state.opsRuntime.processes
+    .filter((process) => process.status === "running")
+    .forEach((process) => {
+      appendLine("output", `${process.pid.padStart(5)} ${process.user.padEnd(10)} ${process.cpu.padStart(5)} ${process.mem.padStart(4)} ${process.command}`);
+    });
+  state.score += 12;
+}
+
+function executeKill(args) {
+  const pid = args.find((arg) => /^\d+$/.test(arg));
+  if (!pid) {
+    appendLine("error", "kill: usage: kill [-9] <pid>");
+    return;
+  }
+  const process = state.opsRuntime.processes.find((item) => item.pid === pid);
+  if (!process || process.status !== "running") {
+    appendLine("error", `kill: (${pid}) - No such process`);
+    return;
+  }
+  process.status = "stopped";
+  appendLine("success", `signal sent to ${pid} (${process.command})`);
+  state.score += process.command === "runaway-worker" ? 40 : 0;
+  if (process.command !== "runaway-worker") {
+    applyIncident({
+      level: "warning",
+      title: "対象外プロセスの停止",
+      message: `${process.command} は今回の暴走プロセスではありません。PID確認を徹底しましょう。`,
+      penalty: 80
+    });
+    return;
+  }
+  completeOpsMission("processStopped");
+}
+
+function executePkill(args) {
+  const name = args.find((arg) => !arg.startsWith("-"));
+  if (!name) {
+    appendLine("error", "pkill: missing process name");
+    return;
+  }
+  const process = state.opsRuntime.processes.find((item) => item.command === name && item.status === "running");
+  if (!process) {
+    appendLine("error", `pkill: no matching process: ${name}`);
+    return;
+  }
+  executeKill([process.pid]);
+}
+
+function executeSs() {
+  appendLine("output", "Netid State  Local Address:Port  Process");
+  state.opsRuntime.ports.forEach((port) => {
+    appendLine("output", `${port.proto.padEnd(5)} ${port.state.padEnd(6)} ${port.local.padEnd(19)} users:((${port.app},pid=${port.pid}))`);
+  });
+  state.score += 12;
+}
+
+function executeNetstat() {
+  appendLine("output", "Proto Local Address       State   PID/Program name");
+  state.opsRuntime.ports.forEach((port) => {
+    appendLine("output", `${port.proto.padEnd(5)} ${port.local.padEnd(19)} ${port.state.padEnd(7)} ${port.pid}/${port.app}`);
+  });
+  state.score += 12;
+}
+
+function executeDig(args) {
+  const host = args.find((arg) => !arg.startsWith("+")) || "api.training.local";
+  const ip = state.opsRuntime.dnsRecords[host];
+  if (!ip) {
+    appendLine("output", `;; QUESTION SECTION:\n;${host}. IN A`);
+    appendLine("warning", ";; no answer");
+    return;
+  }
+  appendLine("output", `;; QUESTION SECTION:\n;${host}. IN A`);
+  appendLine("output", `;; ANSWER SECTION:\n${host}. 60 IN A ${ip}`);
+  state.score += 12;
+}
+
+function executeNslookup(args) {
+  const host = args[0] || "api.training.local";
+  const ip = state.opsRuntime.dnsRecords[host];
+  appendLine("output", "Server:  192.0.2.53");
+  appendLine("output", "Address: 192.0.2.53#53");
+  appendLine("muted", "");
+  if (!ip) {
+    appendLine("warning", `** server can't find ${host}: NXDOMAIN`);
+    return;
+  }
+  appendLine("output", `Name:    ${host}`);
+  appendLine("output", `Address: ${ip}`);
+  state.score += 12;
+}
+
+function executeDf() {
+  appendLine("output", "Filesystem      Size  Used Avail Use% Mounted on");
+  appendLine("output", "/dev/vda1        40G   18G   22G  45% /");
+  appendLine("output", "/dev/vdb1        20G   19G  1.0G  95% /var");
+  appendLine("output", "tmpfs           2.0G  120M  1.9G   6% /run");
+  state.score += 12;
+}
+
+function executeDu(args) {
+  const target = args[args.length - 1] || ".";
+  if (target.includes("/var/log/myapp")) {
+    appendLine("output", "120K\t/var/log/myapp/app.log");
+    appendLine("output", "9.4G\t/var/log/myapp/archive.log");
+    appendLine("output", "9.5G\t/var/log/myapp");
+  } else if (target.includes("/var")) {
+    appendLine("output", "9.5G\t/var/log/myapp");
+    appendLine("output", "780M\t/var/log/nginx");
+    appendLine("output", "12G\t/var");
+  } else {
+    appendLine("output", "24K\t.");
+  }
+  state.score += 12;
+}
+
+function executeFind(args) {
+  const target = args[0] || state.currentPath;
+  if (target.startsWith("/var")) {
+    appendLine("output", "/var/log/myapp/archive.log");
+    appendLine("output", "/var/log/myapp/app.log");
+    appendLine("output", "/var/log/nginx/access.log");
+  } else {
+    appendLine("output", `${resolvePath(target)}/readme.txt`);
+  }
+  state.score += 10;
+}
+
+function executeSort(args) {
+  if (args.length === 0) {
+    appendLine("warning", "sort mock: パイプ入力は未対応です。du の結果を見て大きい行を判断してください。");
+    return;
+  }
+  const node = getNode(resolvePath(args[0]));
+  if (!node || node.type !== "file") {
+    appendLine("error", `sort: cannot read: ${args[0]}`);
+    return;
+  }
+  node.content.split("\n").filter(Boolean).sort().forEach((line) => appendLine("output", line));
+}
+
+function executeSystemctl(args) {
+  if (args[0] !== "status" || !args[1]) {
+    appendLine("error", "systemctl mock: usage: systemctl status <service>");
+    return;
+  }
+  const serviceName = args[1].replace(/\.service$/, "");
+  const service = state.opsRuntime.services[serviceName];
+  if (!service) {
+    appendLine("error", `Unit ${serviceName}.service could not be found.`);
+    return;
+  }
+  appendLine("output", `● ${serviceName}.service - Training application service`);
+  appendLine("output", `   Loaded: ${service.loaded}`);
+  appendLine("error", `   Active: ${service.active} (Result: exit-code)`);
+  appendLine("output", `   Status: ${service.reason}`);
+  state.score += 12;
+}
+
+function executeJournalctl(args) {
+  const unitIndex = args.findIndex((arg) => arg === "-u");
+  const unit = (unitIndex >= 0 ? args[unitIndex + 1] : args[0] || "").replace(/\.service$/, "");
+  if (unit !== "myapp") {
+    appendLine("warning", "journalctl mock: myapp のログだけを用意しています。");
+    return;
+  }
+  appendLine("output", "Apr 28 09:13:11 quest myapp[2840]: starting application");
+  appendLine("error", "Apr 28 09:13:12 quest myapp[2840]: ERROR missing environment file /etc/myapp/env.production");
+  appendLine("output", "Apr 28 09:13:12 quest systemd[1]: myapp.service: Failed with result 'exit-code'.");
+  state.score += 12;
+}
+
+function executeAnswer(args) {
+  const mission = getCurrentOpsMission();
+  if (!mission) {
+    appendLine("warning", "回答対象のミッションがありません。");
+    return;
+  }
+  const answer = args.join(" ").trim();
+  if (!answer) {
+    appendLine("error", "answer: missing answer text");
+    return;
+  }
+  if (mission.check === "processStopped") {
+    appendLine("warning", "このミッションは answer ではなく、対象プロセスを kill または pkill で停止するとクリアです。");
+    return;
+  }
+  if (isExpectedAnswer(mission, answer)) {
+    appendLine("success", `answer accepted: ${answer}`);
+    completeOpsMission("answer");
+    return;
+  }
+  appendLine("warning", `answer rejected: ${answer}`);
+  appendLine("system", getOpsProgressiveHint(mission));
+  state.score = Math.max(0, state.score - 20);
+}
+
 function resolvePath(path) {
   if (!path || path === ".") return state.currentPath;
   const baseParts = path.startsWith("/") ? [] : state.currentPath.split("/").filter(Boolean);
@@ -1306,6 +1893,66 @@ function isGoalDone(goal) {
   return false;
 }
 
+function findOpsMission(input) {
+  const normalized = input.trim().toLowerCase();
+  const index = Number(normalized) - 1;
+  if (Number.isInteger(index) && opsMissions[index]) {
+    return opsMissions[index];
+  }
+  return opsMissions.find((mission) => mission.id === normalized || mission.title.toLowerCase() === normalized) || null;
+}
+
+function getCurrentOpsMission() {
+  if (!state.opsMissionId) return null;
+  return opsMissions.find((mission) => mission.id === state.opsMissionId) || null;
+}
+
+function isOpsMissionCompleted(mission) {
+  return Boolean(mission && state.completedOpsMissionIds.includes(mission.id));
+}
+
+function isOpsGoalDone(mission, goal) {
+  if (isOpsMissionCompleted(mission)) return true;
+  const commands = state.opsRuntime.opsCommandHistory
+    .filter((entry) => entry.missionId === mission.id)
+    .map((entry) => entry.command);
+  if (goal.includes("ps")) return commands.includes("ps");
+  if (goal.includes("ss") || goal.includes("netstat")) return commands.includes("ss") || commands.includes("netstat");
+  if (goal.includes("dig") || goal.includes("nslookup")) return commands.includes("dig") || commands.includes("nslookup");
+  if (goal.includes("ERROR")) return commands.includes("grep") || commands.includes("awk");
+  if (goal.includes("df")) return commands.includes("df");
+  if (goal.includes("systemctl")) return commands.includes("systemctl");
+  if (goal.includes("journalctl")) return commands.includes("journalctl");
+  if (goal.includes("answer")) return isOpsMissionCompleted(mission);
+  if (goal.includes("kill")) {
+    const target = state.opsRuntime.processes.find((process) => process.command === mission.target.name);
+    return Boolean(target && target.status === "stopped");
+  }
+  return false;
+}
+
+function isExpectedAnswer(mission, answer) {
+  const normalized = normalizeAnswer(answer);
+  return mission.target.answer.some((expected) => normalized.includes(normalizeAnswer(expected)));
+}
+
+function normalizeAnswer(value) {
+  return String(value).toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function completeOpsMission(checkType) {
+  const mission = getCurrentOpsMission();
+  if (!mission || isOpsMissionCompleted(mission)) return;
+  if (mission.check !== checkType) return;
+  state.completedOpsMissionIds.push(mission.id);
+  state.score += 90;
+  state.risk = Math.max(0, state.risk - 15);
+  hintText.textContent = "ミッション完了。next または「次へ」でボードへ戻れます。";
+  appendLine("success", "");
+  appendLine("success", `[OPS MISSION COMPLETE] ${mission.successMessage}`);
+  appendLine("system", "next でミッションボードに戻れます。");
+}
+
 function checkMissionCompletion() {
   const mission = missions[state.currentMissionIndex];
   if (!mission || state.completedCurrentMission) return;
@@ -1345,6 +1992,10 @@ function goNextMission() {
 }
 
 function showHint() {
+  if (state.screen === "ops-mission") {
+    showOpsHint();
+    return;
+  }
   if (state.screen !== "game") return;
   const mission = missions[state.currentMissionIndex];
   if (!mission || state.completedCurrentMission) return;
@@ -1353,6 +2004,34 @@ function showHint() {
   state.hintIndex = Math.min(state.hintIndex + 1, mission.hints.length - 1);
   state.score = Math.max(0, state.score - 12);
   render();
+}
+
+function showOpsHint() {
+  const mission = getCurrentOpsMission();
+  if (!mission || isOpsMissionCompleted(mission)) return;
+  const hint = mission.hints[Math.min(state.opsHintIndex, mission.hints.length - 1)];
+  hintText.textContent = hint;
+  appendLine("system", `[hint] ${hint}`);
+  state.opsHintIndex = Math.min(state.opsHintIndex + 1, mission.hints.length - 1);
+  state.score = Math.max(0, state.score - 12);
+  render();
+}
+
+function getOpsProgressiveHint(mission) {
+  const hint = mission.hints[Math.min(state.opsHintIndex, mission.hints.length - 1)];
+  state.opsHintIndex = Math.min(state.opsHintIndex + 1, mission.hints.length - 1);
+  hintText.textContent = hint;
+  return `ヒント: ${hint}`;
+}
+
+function handleNextButton() {
+  if (state.screen === "ops-mission") {
+    if (isOpsMissionCompleted(getCurrentOpsMission())) {
+      showOpsMissionBoard();
+    }
+    return;
+  }
+  goNextMission();
 }
 
 function getCurrentTypingQuestion() {
@@ -1416,7 +2095,7 @@ commandInput.addEventListener("keydown", (event) => {
 });
 
 hintButton.addEventListener("click", showHint);
-nextButton.addEventListener("click", goNextMission);
+nextButton.addEventListener("click", handleNextButton);
 window.addEventListener("resize", resizeCanvas);
 document.addEventListener("click", () => commandInput.focus());
 
