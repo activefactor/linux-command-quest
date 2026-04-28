@@ -150,7 +150,10 @@ const opsMissions = [
     id: "runaway-process",
     title: "暴走プロセスを強制停止せよ",
     incident: "CPU使用率が急上昇し、開発環境の応答が悪化しています。",
+    background: "開発用サーバー `dev-app-01` でCPUアラートが発報しました。Web画面の反応が遅く、まずは原因プロセスの切り分けが必要です。",
     instruction: "プロセス一覧から暴走しているプロセスを特定し、対象だけを停止してください。",
+    answerGuide: "`ps` でCPU使用率が異常なプロセスを見つけ、`kill <PID>` または `pkill <プロセス名>` で停止する",
+    clearCondition: "PID 4321 の `runaway-worker` だけを停止できればクリア",
     concepts: ["プロセス", "プロセスID", "シグナル"],
     commands: ["ps", "kill", "pkill"],
     goals: ["ps でプロセス一覧を確認する", "CPU使用率が高いプロセスを特定する", "対象プロセスだけを kill または pkill で停止する"],
@@ -163,7 +166,10 @@ const opsMissions = [
     id: "port-8080",
     title: "8080番ポートの使用者を特定せよ",
     incident: "新しいアプリケーションが8080番ポートで起動できません。",
+    background: "検証環境でAPIを起動しようとしたところ `Address already in use` が出ています。先に8080番を使っているアプリを確認する必要があります。",
     instruction: "8080番ポートをLISTENしているアプリケーション名を特定し、answer で回答してください。",
+    answerGuide: "`ss` または `netstat` で8080番ポートを確認し、`answer <アプリ名>` で回答する",
+    clearCondition: "`answer node-api`、または該当PIDの `answer 2840` でクリア",
     concepts: ["ポート", "待ち受け", "プロセス"],
     commands: ["ss", "netstat", "ps", "answer"],
     goals: ["ss または netstat で待ち受けポートを確認する", "8080番ポートのPIDを確認する", "アプリケーション名を answer で回答する"],
@@ -176,7 +182,10 @@ const opsMissions = [
     id: "dns-forward",
     title: "対象URLのIPアドレスを特定せよ",
     incident: "監視対象のURLがどのIPへ向いているか確認が必要です。",
+    background: "外形監視で `api.training.local` の接続先確認を依頼されました。DNS設定が想定通りか、正引き結果を確認します。",
     instruction: "DNSの正引き結果として得られるIPアドレスを answer で回答してください。",
+    answerGuide: "`dig api.training.local` または `nslookup api.training.local` を実行し、`answer <IPアドレス>` で回答する",
+    clearCondition: "`answer 203.0.113.24` でクリア",
     concepts: ["DNS", "正引き", "Aレコード"],
     commands: ["dig", "nslookup", "answer"],
     goals: ["dig または nslookup で名前解決する", "AレコードのIPアドレスを読む", "IPアドレスを answer で回答する"],
@@ -189,7 +198,10 @@ const opsMissions = [
     id: "log-forensics",
     title: "ログからエラー事象を特定せよ",
     incident: "Webアプリケーションでエラーが発生しています。",
+    background: "ユーザーから500エラーの報告が入りました。アプリログからERROR行を探し、実際に起きているエラー事象を特定します。",
     instruction: "ログファイルからERROR行を探し、発生しているエラーメッセージを answer で回答してください。",
+    answerGuide: "`grep ERROR /var/log/myapp/app.log` でERROR行を探し、`answer <エラーメッセージ>` で回答する",
+    clearCondition: "`answer database connection timeout` でクリア",
     concepts: ["ログファイル", "ログレベル", "severity"],
     commands: ["cat", "less", "view", "grep", "awk", "answer"],
     goals: ["/var/log/myapp/app.log を確認する", "ERROR を含む行を絞り込む", "エラーメッセージを answer で回答する"],
@@ -202,7 +214,10 @@ const opsMissions = [
     id: "disk-pressure",
     title: "ディスク逼迫の原因を突き止めよ",
     incident: "/var のディスク使用率が急上昇しています。",
+    background: "監視から `/var` の使用率95%アラートが届きました。サービス停止につながる前に、どのファイルが容量を圧迫しているか調査します。",
     instruction: "容量を圧迫しているファイルまたはディレクトリを特定し、answer で回答してください。",
+    answerGuide: "`df` で逼迫箇所を見て、`du /var/log/myapp` などで原因を絞り、`answer <ファイル名>` で回答する",
+    clearCondition: "`answer /var/log/myapp/archive.log` または `answer archive.log` でクリア",
     concepts: ["ディスク使用率", "ファイルサイズ", "ログ肥大化"],
     commands: ["df", "du", "find", "sort", "answer"],
     goals: ["df で使用率が高い領域を確認する", "du または find で大きいファイルを探す", "原因ファイルを answer で回答する"],
@@ -215,7 +230,10 @@ const opsMissions = [
     id: "service-down",
     title: "停止したサービスの原因を追跡せよ",
     incident: "アプリケーションサービス myapp が停止しています。",
+    background: "リリース後に `myapp` が起動しなくなりました。サービス状態と直近ログから、停止した直接原因を特定します。",
     instruction: "サービス状態と直近ログを確認し、停止原因を answer で回答してください。",
+    answerGuide: "`systemctl status myapp` と `journalctl -u myapp` を確認し、`answer <停止原因>` で回答する",
+    clearCondition: "`answer missing environment file` など、環境ファイル不足を示す回答でクリア",
     concepts: ["サービス", "systemd", "ジャーナルログ"],
     commands: ["systemctl", "journalctl", "ps", "grep", "answer"],
     goals: ["systemctl status myapp で状態を確認する", "journalctl -u myapp で直近ログを見る", "停止原因を answer で回答する"],
@@ -514,8 +532,10 @@ function renderPanel() {
     const mission = getCurrentOpsMission();
     learningPanel.hidden = false;
     panelTitle.textContent = mission ? mission.title : "実務ミッション";
-    panelDescription.textContent = mission ? `${mission.instruction} 迷ったらヒント、離脱は exit、一覧へ戻る時は back です。` : "`missions` でミッションを選び直してください。";
+    panelDescription.textContent = mission ? `${mission.background} ${mission.instruction}` : "`missions` でミッションを選び直してください。";
     if (mission) {
+      addGoal(`やること: ${mission.answerGuide}`, isOpsMissionCompleted(mission));
+      addGoal(`クリア条件: ${mission.clearCondition}`, isOpsMissionCompleted(mission));
       mission.goals.forEach((goal) => addGoal(goal, isOpsGoalDone(mission, goal)));
       addGoal(`概念: ${mission.concepts.join(" / ")}`, false);
       addGoal(`主なコマンド: ${mission.commands.join(" / ")}`, false);
@@ -790,6 +810,7 @@ function showOpsMissionBoard() {
   opsMissions.forEach((mission, index) => {
     const done = state.completedOpsMissionIds.includes(mission.id) ? "DONE" : "OPEN";
     appendLine(done === "DONE" ? "success" : "output", `[${index + 1}] ${mission.id.padEnd(16)} ${mission.title}  (${done})`);
+    appendLine("muted", `    ${mission.incident}`);
   });
   appendLine("muted", "");
   appendLine("muted", "番号またはミッションIDを入力します。exit でトップへ戻ります。");
@@ -805,7 +826,18 @@ function startOpsMission(mission) {
   state.lines = [];
   hintText.textContent = "";
   appendLine("error", `[ALERT] ${mission.incident}`);
-  appendLine("system", mission.instruction);
+  appendLine("muted", "");
+  appendLine("system", "[BACKGROUND]");
+  appendLine("output", mission.background);
+  appendLine("muted", "");
+  appendLine("system", "[REQUEST]");
+  appendLine("output", mission.instruction);
+  appendLine("muted", "");
+  appendLine("system", "[WHAT TO DO]");
+  appendLine("output", mission.answerGuide);
+  appendLine("muted", "");
+  appendLine("system", "[CLEAR CONDITION]");
+  appendLine("output", mission.clearCondition);
   appendLine("muted", "");
   appendLine("output", `Mission ID: ${mission.id}`);
   appendLine("output", `Concepts: ${mission.concepts.join(", ")}`);
@@ -1813,6 +1845,7 @@ function executeAnswer(args) {
   }
   if (mission.check === "processStopped") {
     appendLine("warning", "このミッションは answer ではなく、対象プロセスを kill または pkill で停止するとクリアです。");
+    appendLine("system", mission.answerGuide);
     return;
   }
   if (isExpectedAnswer(mission, answer)) {
@@ -1821,6 +1854,7 @@ function executeAnswer(args) {
     return;
   }
   appendLine("warning", `answer rejected: ${answer}`);
+  appendLine("system", `求められている回答: ${mission.clearCondition}`);
   appendLine("system", getOpsProgressiveHint(mission));
   state.score = Math.max(0, state.score - 20);
 }
